@@ -1,0 +1,168 @@
+#!/usr/bin/env bash
+SED_CMD="sed"
+NETCAT_CMD="ncat"
+DIG_CMD="dig"
+BROWSER_CMD="xdg-open"
+VPN_CMD="/opt/awsvpnclient/Service/Resources/openvpn/acvc-openvpn" # patched OpenVPN client
+
+SAML_RESPONSE_TIMEOUT=30
+
+VPN_INSTANCE="$1"
+VPN_CONF="/etc/openvpn/client/$VPN_INSTANCE.conf"
+VPN_HOSTNAME=$($SED_CMD -rn 's/remote ([^[:space:]]+) [[:digit:]]+$/\1/p' "$VPN_CONF")
+VPN_PORT=$($SED_CMD -rn 's/remote [^[:space:]]+ ([[:digit:]]+)$/\1/p' "$VPN_CONF")
+VPN_MGMT_SOCKET="/run/openvpn-client/$VPN_INSTANCE.sock"
+
+if [ ! -S "$VPN_MGMT_SOCKET" ]; then
+  echo "ERROR: No OpenVPN client service is running for $VPN_INSTANCE. Start one with:\n  $ systemctl start aws-vpn@$VPN_INSTANCE.service" >&2
+  exit 1
+fi
+
+VPN_GROUP=$(stat -c '%G' "$VPN_MGMT_SOCKET")
+
+if ! groups | grep -P "\\b$VPN_GROUP\\b" >/dev/null; then
+  echo "ERROR: User $USER is not in the '$VPN_GROUP' group." >&2
+  exit 1
+fi
+
+if [ -z "$VPN_PORT" ]; then
+  echo "ERROR: No 'remote' parameter found in VPN config file: $VPN_CONF" >&2
+  exit 1
+fi
+
+# fetch/cache one ip address of the vpn endpoint. The same ip needs to be used for both the below vpn connections
+VPN_SRV=$($DIG_CMD a +short ${VPN_HOSTNAME} | $SED_CMD -r '/[^[:digit:].]+/d' | head -n 1)
+
+VPN_RESPONSE=$($VPN_CMD --remote "${VPN_SRV}" "${VPN_PORT}" \
+    --config "${VPN_CONF}" \
+    --auth-retry none \
+    --auth-user-pass <( printf "%s\n%s\n" "N/A" "ACS::35001" ) \
+    )
+VPN_OUT=$(echo $VPN_RESPONSE | grep "AUTH_FAILED,CRV1")
+
+# get SID from the reply
+VPN_SID=$(echo "${VPN_OUT}" | $SED_CMD -rn 's/.*AUTH_FAILED,CRV1:R:([^:]+):.*/\1/p')
+
+# start a "web server" that will receive the saml response from the idp
+coproc bash -c "echo -e \"HTTP/1.1 200 OK\n\n<script>window.close('','_parent','');</script> Got SAMLResponse field, it is now safe to close this window\n\" | ${NETCAT_CMD} -l -p 35001 -i ${SAML_RESPONSE_TIMEOUT}"
+NC_OUT=${COPROC[0]}
+NC_IN=${COPROC[1]}
+
+NETCAT_PID=$!
+
+# create a trap that will close the "web server" process as well if this script is aborted by CTRL+C
+trap "kill ${NETCAT_PID} 2> /dev/null" EXIT
+
+echo "Opening browser and wait for the SAML response..."
+URL=$(echo "${VPN_OUT}" | grep -Eo 'https://[^[:space:]]+')
+
+# start the browser as the regular user. not as root.
+$BROWSER_CMD $URL
+
+SAML_RESPONSE=$(cat <&$NC_OUT)
+
+wait $NETCAT_PID
+
+# cleanup the trap
+trap - EXIT
+
+# if no response was received within the timeout window - exit
+if [[ $(echo "$SAML_RESPONSE" | awk '/SAMLResponse.*$/' | wc -l) -lt 1 ]]; then
+  echo "ERROR: No SAML response was received from the IDP." >&2
+  exit 1
+fi
+
+# only save the actual SAMLResponse data field from the idp saml response. also remove the trailing new line char
+SAML_RESPONSE_DATA=$(echo "$SAML_RESPONSE" | awk '
+  /^SAMLResponse=/ {
+    gsub(/SAMLResponse=/,"");
+    gsub(/GET.*$/,"");
+    printf "%s",$0;
+  }')
+
+VPN_PASS=$(echo -n "${SAML_RESPONSE_DATA}")
+
+# create the vpn user/password file that is used as input for the final vpn connect
+VPN_PASS=$(printf "CRV1::%s::%s\n" "${VPN_SID}" "${VPN_PASS}")
+
+coproc setsid -w sg "$VPN_GROUP" "$NETCAT_CMD -U $VPN_MGMT_SOCKET"
+NC_OUT=${COPROC[0]}
+NC_IN=${COPROC[1]}
+
+trap "echo 'Disconnecting VPN...' && echo 'signal SIGHUP' >&$NC_IN && sleep 1 && kill -- -${COPROC_PID} 2>/dev/null; wait " EXIT
+
+echo "state on" >&$NC_IN
+
+while IFS=: read -u $NC_OUT -r signal data
+do
+  case $signal in
+    ">HOLD")
+      echo "hold release" >&$NC_IN
+      ;;
+    ">REMOTE")
+      if [[ "$data" == "$VPN_HOSTNAME,$VPN_PORT,udp"* ]]; then
+        echo "remote MOD $VPN_SRV $VPN_PORT" >&$NC_IN
+      else
+        echo "WARN: Skipping attempt to connect to unrecognised endpoint: $data" >&2
+        echo "remote SKIP" >&$NC_IN
+      fi
+      ;;
+    ">PASSWORD")
+      if [[ "$data" == "Need 'Auth' username/password"* ]]; then
+        echo "username \"Auth\" \"N/A\"" >&$NC_IN
+        echo "password \"Auth\" \"$VPN_PASS\"" >&$NC_IN
+      else
+        echo "ERROR: Unable to supply requested authentication: $data" >&2
+        exit 1
+      fi
+      ;;
+    ">STATE")
+      state=$(echo "$data" | awk -F, '{ print $2 }')
+      case $state in
+        CONNECTING)
+          echo "Connecting to VPN at $VPN_HOSTNAME ($VPN_SRV)"
+          ;;
+        WAIT)
+          echo "Waiting for response from $VPN_HOSTNAME ($VPN_SRV)..."
+          ;;
+        AUTH)
+          echo "Authenticating with VPN server..."
+          ;;
+        GET_CONFIG)
+          echo "Downloading configuration from VPN server..."
+          ;;
+        ASSIGN_IP)
+          echo "Assigning IP address to VPN interface..."
+          ;;
+        ADD_ROUTES)
+          echo "Adding VPN routes to local system..."
+          ;;
+        CONNECTED)
+          echo "Connected to VPN at $VPN_HOSTNAME ($VPN_SRV)"
+          ;;
+        RECONNECTING)
+          echo "Reconnecting to VPN at $VPN_HOSTNAME ($VPN_SRV)"
+          ;;
+        EXITING)
+          echo "OpenVPN client shutting down..."
+          trap - EXIT
+          kill -- -$COPROC_PID 2>/dev/null
+          wait
+          exit 1
+          ;;
+      esac
+      ;;
+    "ERROR")
+      echo "ERROR: $data" >&2
+      ;;
+    "FATAL")
+      echo "FATAL ERROR: $data" >&2
+      break;
+      ;;
+    *)
+      ;;
+  esac
+done
+
+trap - EXIT
+kill -- -$COPROC_PID 2>/dev/null

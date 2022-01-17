@@ -1,0 +1,18 @@
+[Unit]
+Description=AWS Client VPN for %I
+Documentation=man:openvpn(8)
+Documentation=https://community.openvpn.net/openvpn/wiki/Openvpn24ManPage
+Documentation=https://community.openvpn.net/openvpn/wiki/HOWTO
+# TODO: add link to docs on usage
+
+[Service]
+Type=exec
+PrivateTmp=true
+WorkingDirectory=/etc/openvpn/client
+ExecStart=bash /usr/local/bin/aws-vpn %i
+ProtectSystem=true
+ProtectHome=true
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
