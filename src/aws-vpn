@@ -11,6 +11,13 @@ VPN_HOSTNAME=$(sed -rn 's/remote ([^[:space:]]+) [[:digit:]]+$/\1/p' "$VPN_CONF"
 VPN_PORT=$(sed -rn 's/remote [^[:space:]]+ ([[:digit:]]+)$/\1/p' "$VPN_CONF")
 VPN_MGMT_SOCKET="/run/openvpn-client/$VPN_INSTANCE.sock"
 
+SAML_RESPONSE=<<HTTP
+HTTP/1.1 200 OK
+
+<script>window.close('','_parent','');</script>
+Got SAMLResponse field, it is now safe to close this window
+HTTP
+
 resolve_host() {
   host="$1"
 
@@ -31,8 +38,53 @@ resolve_host() {
   fi
 }
 
+auth() {
+  local addr="$1"
+  local port="$2"
+  local conf="$3"
+  local timeout="${4:-30}"
+
+  local local_port=35001
+
+  local out=$($VPN_CMD --remote "$addr" "$port" --config "$conf" \
+    --auth-retry none \
+    --auth-user-pass <( printf "%s\n%s\n" "N/A" "ACS::$local_port" ) \
+    | grep "AUTH_FAILED,CRV1"
+  )
+
+  # get SID from the reply
+  local sid=$(echo "$out" | sed -rn 's/.*AUTH_FAILED,CRV1:R:([^:]+):.*/\1/p')
+
+  # start a "web server" that will receive the saml response from the idp
+  exec 3< <(echo -e "$SAML_RESPONSE" | timeout $timeout ${NETCAT_CMD} -l $local_port)
+  local pid=$!
+
+  # create a trap that will close the "web server" process as well if this script is aborted by CTRL+C
+  trap "kill $pid 2> /dev/null" EXIT
+
+  $BROWSER_CMD $(echo "$out" | grep -Eo 'https://[^[:space:]]+')
+
+  local response=$(cat <&3)
+
+  wait $pid
+
+  # cleanup the trap
+  trap - EXIT
+
+  # if no response was received within the timeout window - exit
+  if [[ $(echo "$response" | awk '/SAMLResponse.*$/' | wc -l) -lt 1 ]]; then
+    echo "ERROR: No SAML response was received from the IDP." >&2
+    exit 1
+  fi
+
+  printf "CRV1::%s::%s\n" "$sid" "$(echo -n "$(echo "$response" \
+    | awk '/^SAMLResponse=/ { gsub(/SAMLResponse=/,""); gsub(/GET.*$/,""); printf "%s",$0; }')")"
+
+  return 0
+}
+
 if [ ! -S "$VPN_MGMT_SOCKET" ]; then
-  echo "ERROR: No OpenVPN client service is running for $VPN_INSTANCE. Start one with:\n  $ systemctl start aws-vpn@$VPN_INSTANCE.service" >&2
+  echo -e "ERROR: No OpenVPN client service is running for $VPN_INSTANCE. Start one with:\n  $ systemctl start aws-vpn@$VPN_INSTANCE.service" >&2
   exit 1
 fi
 
@@ -51,63 +103,13 @@ fi
 # fetch/cache one ip address of the vpn endpoint. The same ip needs to be used for both the below vpn connections
 VPN_SRV=$(resolve_host ${VPN_HOSTNAME})
 
-VPN_RESPONSE=$($VPN_CMD --remote "${VPN_SRV}" "${VPN_PORT}" \
-    --config "${VPN_CONF}" \
-    --auth-retry none \
-    --auth-user-pass <( printf "%s\n%s\n" "N/A" "ACS::35001" ) \
-    )
-VPN_OUT=$(echo $VPN_RESPONSE | grep "AUTH_FAILED,CRV1")
-
-# get SID from the reply
-VPN_SID=$(echo "${VPN_OUT}" | sed -rn 's/.*AUTH_FAILED,CRV1:R:([^:]+):.*/\1/p')
-
-# start a "web server" that will receive the saml response from the idp
-coproc bash -c "echo -e \"HTTP/1.1 200 OK\n\n<script>window.close('','_parent','');</script> Got SAMLResponse field, it is now safe to close this window\n\" | timeout ${SAML_RESPONSE_TIMEOUT} ${NETCAT_CMD} -l -p 35001"
-NC_OUT=${COPROC[0]}
-NC_IN=${COPROC[1]}
-
-NETCAT_PID=$!
-
-# create a trap that will close the "web server" process as well if this script is aborted by CTRL+C
-trap "kill ${NETCAT_PID} 2> /dev/null" EXIT
-
-echo "Opening browser and wait for the SAML response..."
-URL=$(echo "${VPN_OUT}" | grep -Eo 'https://[^[:space:]]+')
-
-# start the browser as the regular user. not as root.
-$BROWSER_CMD $URL
-
-SAML_RESPONSE=$(cat <&$NC_OUT)
-
-wait $NETCAT_PID
-
-# cleanup the trap
-trap - EXIT
-
-# if no response was received within the timeout window - exit
-if [[ $(echo "$SAML_RESPONSE" | awk '/SAMLResponse.*$/' | wc -l) -lt 1 ]]; then
-  echo "ERROR: No SAML response was received from the IDP." >&2
-  exit 1
-fi
-
-# only save the actual SAMLResponse data field from the idp saml response. also remove the trailing new line char
-SAML_RESPONSE_DATA=$(echo "$SAML_RESPONSE" | awk '
-  /^SAMLResponse=/ {
-    gsub(/SAMLResponse=/,"");
-    gsub(/GET.*$/,"");
-    printf "%s",$0;
-  }')
-
-VPN_PASS=$(echo -n "${SAML_RESPONSE_DATA}")
-
-# create the vpn user/password file that is used as input for the final vpn connect
-VPN_PASS=$(printf "CRV1::%s::%s\n" "${VPN_SID}" "${VPN_PASS}")
-
+# connect to OpenVPN client management socket
 coproc setsid -w sg "$VPN_GROUP" "$NETCAT_CMD -U $VPN_MGMT_SOCKET"
 NC_OUT=${COPROC[0]}
 NC_IN=${COPROC[1]}
+MGMT_PID=${COPROC_PID}
 
-trap "echo 'Disconnecting VPN...' && echo 'signal SIGHUP' >&$NC_IN && sleep 1 && kill -- -${COPROC_PID} 2>/dev/null; wait " EXIT
+trap "echo 'Disconnecting VPN...' && echo 'signal SIGHUP' >&$NC_IN && sleep 1 && kill -- -$MGMT_PID 2>/dev/null; wait " EXIT
 
 echo "state on" >&$NC_IN
 
@@ -127,8 +129,11 @@ do
       ;;
     ">PASSWORD")
       if [[ "$data" == "Need 'Auth' username/password"* ]]; then
-        echo "username \"Auth\" \"N/A\"" >&$NC_IN
-        echo "password \"Auth\" \"$VPN_PASS\"" >&$NC_IN
+        echo "Opening browser and waiting for the SAML response..."
+        if pass=$(auth ${VPN_SRV} ${VPN_PORT} ${VPN_CONF} ${SAML_RESPONSE_TIMEOUT}); then
+          echo "username \"Auth\" \"N/A\"" >&$NC_IN
+          echo "password \"Auth\" \"$pass\"" >&$NC_IN
+        fi
       else
         echo "ERROR: Unable to supply requested authentication: $data" >&2
         exit 1
@@ -164,7 +169,7 @@ do
         EXITING)
           echo "OpenVPN client shutting down..."
           trap - EXIT
-          kill -- -$COPROC_PID 2>/dev/null
+          kill -- -$MGMT_PID 2>/dev/null
           wait
           exit 1
           ;;
@@ -183,4 +188,4 @@ do
 done
 
 trap - EXIT
-kill -- -$COPROC_PID 2>/dev/null
+kill -- -$MGMT_PID 2>/dev/null
