@@ -7,8 +7,14 @@ instead of the Amazon GUI._
 
 * BASH 4+
 * SystemD
-* AWS VPN client or a compatibly patched OpenVPN client
-* A `netcat` implementation (e.g. `nc`, `netcat`, `ncat`)
+* The AWS VPN client or a compatibly patched OpenVPN client
+* A `netcat` implementation (e.g. `nc`, `ncat`)
+* `sed`, `awk` and other basic utilities
+
+Note: if you use a patched OpenVPN client, you will either need to install it
+at `/opt/awsvpnclient/Service/Resources/openvpn/acvc-openvpn` or replace the
+paths in the source files in this repo. You will also need to supply an
+equivalent `configure-dns` script to the one shipped in the Amazon VPN client.
 
 ## Assumptions
 
@@ -24,6 +30,14 @@ Replace `<instance>` with the hostname of your VPN below. Multiple VPNs may be
 configured by repeating these steps for each VPN.
 
 First, install the files, either using the Arch package, or manually as described below.
+
+Place the configuration file for your VPN in `/etc/openvpn/client/<instance>.conf`.
+If this directory doesn't exist, create it. These files should be owned by
+user:group `openvpn:network`.
+
+If your VPN configuration file included the `auth-federate` directive, remove it
+as this is not understood by the OpenVPN client and is merely used as a marker
+to indicate that this is an Amazon VPN configuration.
 
 Next, enable the _system_ unit for the VPN:
 
@@ -77,6 +91,18 @@ To manually install, copy the included files to the correct locations:
 Note: if you are not using the AWS VPN client, or have it installed in a
 different location, you may need to edit `system_aws-vpn@.service` to modify
 the directory it searches for the various files.
+
+## Debugging
+
+* System unit logs: `journalctl -u aws-vpn@<instance>`
+* User unit logs: `journalctl --user -u aws-vpn@<instance>`
+
+Check both sets of logs for signs of problems, as issues can arise in either of
+them.
+
+If you're able to connect, but are having issues resolving hostnames of some
+services; first verify you're using systemd-resolved, and if you are, try
+adding `dhcp-option DOMAIN-ROUTE .` to your VPN configuration file.
 
 ## Details
 
