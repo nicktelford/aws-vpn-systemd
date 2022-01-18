@@ -2,3 +2,4 @@
 .BUILDINFO
 .MTREE
 .PKGINFO
+pkg/
