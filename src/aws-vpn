@@ -1,17 +1,35 @@
 #!/usr/bin/env bash
-SED_CMD="sed"
-NETCAT_CMD="ncat"
-DIG_CMD="dig"
-BROWSER_CMD="xdg-open"
+NETCAT_CMD=$(which nc 2>/dev/null || which ncat 2>/dev/null)
+BROWSER_CMD=$(which xdg-open 2>/dev/null || echo $BROWSER)
 VPN_CMD="/opt/awsvpnclient/Service/Resources/openvpn/acvc-openvpn" # patched OpenVPN client
 
 SAML_RESPONSE_TIMEOUT=30
 
 VPN_INSTANCE="$1"
 VPN_CONF="/etc/openvpn/client/$VPN_INSTANCE.conf"
-VPN_HOSTNAME=$($SED_CMD -rn 's/remote ([^[:space:]]+) [[:digit:]]+$/\1/p' "$VPN_CONF")
-VPN_PORT=$($SED_CMD -rn 's/remote [^[:space:]]+ ([[:digit:]]+)$/\1/p' "$VPN_CONF")
+VPN_HOSTNAME=$(sed -rn 's/remote ([^[:space:]]+) [[:digit:]]+$/\1/p' "$VPN_CONF")
+VPN_PORT=$(sed -rn 's/remote [^[:space:]]+ ([[:digit:]]+)$/\1/p' "$VPN_CONF")
 VPN_MGMT_SOCKET="/run/openvpn-client/$VPN_INSTANCE.sock"
+
+resolve_host() {
+  host="$1"
+
+  if cmd=$(which dig); then
+    $cmd a +short $host | sed -r '/[^[:digit:].]+/d' | head -n 1 
+    return $?
+  elif cmd=$(which host); then
+    $cmd $host | sed -rn '{0,/has address/ s/.*has address ([[:digit:].]+)/\1/p;}'
+    return $?
+  elif cmd=$(which nslookup); then
+    $cmd $host | sed -rn '{0,/Address: / s/Address: //p}'
+    return $?
+  elif cmd=$(which getent); then
+    $cmd hosts $host | awk '{print $1; exit}'
+    return $?
+  else
+    return 1
+  fi
+}
 
 if [ ! -S "$VPN_MGMT_SOCKET" ]; then
   echo "ERROR: No OpenVPN client service is running for $VPN_INSTANCE. Start one with:\n  $ systemctl start aws-vpn@$VPN_INSTANCE.service" >&2
@@ -31,7 +49,7 @@ if [ -z "$VPN_PORT" ]; then
 fi
 
 # fetch/cache one ip address of the vpn endpoint. The same ip needs to be used for both the below vpn connections
-VPN_SRV=$($DIG_CMD a +short ${VPN_HOSTNAME} | $SED_CMD -r '/[^[:digit:].]+/d' | head -n 1)
+VPN_SRV=$(resolve_host ${VPN_HOSTNAME})
 
 VPN_RESPONSE=$($VPN_CMD --remote "${VPN_SRV}" "${VPN_PORT}" \
     --config "${VPN_CONF}" \
@@ -41,10 +59,10 @@ VPN_RESPONSE=$($VPN_CMD --remote "${VPN_SRV}" "${VPN_PORT}" \
 VPN_OUT=$(echo $VPN_RESPONSE | grep "AUTH_FAILED,CRV1")
 
 # get SID from the reply
-VPN_SID=$(echo "${VPN_OUT}" | $SED_CMD -rn 's/.*AUTH_FAILED,CRV1:R:([^:]+):.*/\1/p')
+VPN_SID=$(echo "${VPN_OUT}" | sed -rn 's/.*AUTH_FAILED,CRV1:R:([^:]+):.*/\1/p')
 
 # start a "web server" that will receive the saml response from the idp
-coproc bash -c "echo -e \"HTTP/1.1 200 OK\n\n<script>window.close('','_parent','');</script> Got SAMLResponse field, it is now safe to close this window\n\" | ${NETCAT_CMD} -l -p 35001 -i ${SAML_RESPONSE_TIMEOUT}"
+coproc bash -c "echo -e \"HTTP/1.1 200 OK\n\n<script>window.close('','_parent','');</script> Got SAMLResponse field, it is now safe to close this window\n\" | timeout ${SAML_RESPONSE_TIMEOUT} ${NETCAT_CMD} -l -p 35001"
 NC_OUT=${COPROC[0]}
 NC_IN=${COPROC[1]}
 
