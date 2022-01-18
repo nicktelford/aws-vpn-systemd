@@ -11,7 +11,7 @@ VPN_HOSTNAME=$(sed -rn 's/remote ([^[:space:]]+) [[:digit:]]+$/\1/p' "$VPN_CONF"
 VPN_PORT=$(sed -rn 's/remote [^[:space:]]+ ([[:digit:]]+)$/\1/p' "$VPN_CONF")
 VPN_MGMT_SOCKET="/run/openvpn-client/$VPN_INSTANCE.sock"
 
-SAML_RESPONSE=<<HTTP
+read -r -d '' SAML_RESPONSE <<'HTTP'
 HTTP/1.1 200 OK
 
 <script>window.close('','_parent','');</script>
