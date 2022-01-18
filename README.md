@@ -13,9 +13,9 @@ instead of the Amazon GUI._
 ## Assumptions
 
 * The `openvpn` user exists, and the VPN client should run as this user.
-* The `network` group exists, and members of this group may manage VPN connections.
+* The `network` group exists, and members of this group may manage VPN connections. If you add current user to a group you need to logout/login.
 * AWS VPN configuration files are stored in `/etc/openvpn/client/<instance>.conf`,
-  where `<instance>` is the hostname of your VPN.
+  where `<instance>` is the hostname of your VPN. If you are using AWS VPN Client then edit your vpn configuration and get rid of `auth-federate` if you have any. Then, copy your vpn configuration file to `/etc/openvpn/client/<instance>.conf`
 * Your DNS configuration is being managed by `systemd-resolved`
 
 ## Usage
