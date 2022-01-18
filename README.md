@@ -9,6 +9,7 @@ instead of the Amazon GUI._
 * SystemD
 * AWS VPN client or a compatibly patched OpenVPN client
 * `ncat` from extras/nmap in arch.
+* `dig` from extras/bind in arch.
 
 ## Assumptions
 
