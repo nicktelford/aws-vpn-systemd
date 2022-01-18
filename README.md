@@ -8,7 +8,7 @@ instead of the Amazon GUI._
 * BASH 4+
 * SystemD
 * AWS VPN client or a compatibly patched OpenVPN client
-* A `netcat` implementation (e.g. `nc`, `netcat`, `ncat`)
+* `ncat` from extras/nmap in arch.
 
 ## Assumptions
 
