@@ -6,13 +6,18 @@ Documentation=https://community.openvpn.net/openvpn/wiki/HOWTO
 Documentation=https://github.com/nicktelford/aws-vpn-systemd
 
 [Service]
-Type=exec
-PrivateTmp=true
-WorkingDirectory=/etc/openvpn/client
-ExecStart=bash /usr/local/bin/aws-vpn %i
-ProtectSystem=true
-ProtectHome=true
+Type=notify
+NotifyAccess=all
 KillMode=process
+
+WorkingDirectory=/tmp
+
+ExecStart=bash /usr/local/bin/aws-vpn %i
+
+PrivateTmp=yes
+DevicePolicy=closed
+ProtectSystem=strict
+ProtectHome=read-only
 
 [Install]
 WantedBy=multi-user.target

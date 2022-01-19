@@ -144,30 +144,39 @@ do
       case $state in
         CONNECTING)
           echo "Connecting to VPN at $VPN_HOSTNAME ($VPN_SRV)"
+          systemd-notify "STATUS=Connecting to VPN at $VPN_HOSTNAME ($VPN_SRV)"
           ;;
         WAIT)
           echo "Waiting for response from $VPN_HOSTNAME ($VPN_SRV)..."
+          systemd-notify "STATUS=Waiting for response from $VPN_HOSTNAME ($VPN_SRV)..."
           ;;
         AUTH)
           echo "Authenticating with VPN server..."
+          systemd-notify "STATUS=Authenticating with VPN server..."
           ;;
         GET_CONFIG)
           echo "Downloading configuration from VPN server..."
+          systemd-notify "STATUS=Downloading configuration from VPN server..."
           ;;
         ASSIGN_IP)
           echo "Assigning IP address to VPN interface..."
+          systemd-notify "STATUS=Assigning IP address to VPN interface..."
           ;;
         ADD_ROUTES)
           echo "Adding VPN routes to local system..."
+          systemd-notify "STATUS=Adding VPN routes to local system..."
           ;;
         CONNECTED)
           echo "Connected to VPN at $VPN_HOSTNAME ($VPN_SRV)"
+          systemd-notify --ready "STATUS=Connected to VPN at $VPN_HOSTNAME ($VPN_SRV)"
           ;;
         RECONNECTING)
           echo "Reconnecting to VPN at $VPN_HOSTNAME ($VPN_SRV)"
+          systemd-notify "STATUS=Reconnecting to VPN at $VPN_HOSTNAME ($VPN_SRV)"
           ;;
         EXITING)
           echo "OpenVPN client shutting down..."
+          systemd-notify "STOPPING=1" "STATUS=OpenVPN client shutting down..."
           trap - EXIT
           kill -- -$MGMT_PID 2>/dev/null
           wait
@@ -187,5 +196,6 @@ do
   esac
 done
 
+systemd-notify "STOPPING=1"
 trap - EXIT
 kill -- -$MGMT_PID 2>/dev/null
