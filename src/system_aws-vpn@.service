@@ -5,29 +5,45 @@ Wants=network-online.target
 Documentation=man:openvpn(8)
 Documentation=https://community.openvpn.net/openvpn/wiki/Openvpn24ManPage
 Documentation=https://community.openvpn.net/openvpn/wiki/HOWTO
-# TODO: add link to docs on usage
+Documentation=https://github.com/nicktelford/aws-vpn-systemd
 
 [Service]
 Type=simple
-PrivateTmp=true
-WorkingDirectory=/etc/openvpn/client
+User=openvpn
+Group=network
+KillMode=process
+
+ConfigurationDirectory=openvpn/client
+RuntimeDirectory=openvpn-client/%i
+WorkingDirectory=/run/openvpn-client/%i
+
 ExecStart=/opt/awsvpnclient/Service/Resources/openvpn/acvc-openvpn \
-  --suppress-timestamps --nobind --config %i.conf \
-  --management /run/openvpn-client/%i.sock unix \
+  --suppress-timestamps --nobind --config /etc/openvpn/client/%i.conf \
+  --management /run/openvpn-client/%i/mgmt.sock unix \
   --management-client-group network \
   --management-hold --management-query-remote --management-query-passwords \
   --script-security 2 \
   --up /opt/awsvpnclient/Service/Resources/openvpn/configure-dns
-User=openvpn
-Group=network
-AmbientCapabilities=CAP_IPC_LOCK CAP_NET_ADMIN CAP_NET_RAW CAP_SETGID CAP_SETUID CAP_SYS_CHROOT CAP_DAC_OVERRIDE
-CapabilityBoundingSet=CAP_IPC_LOCK CAP_NET_ADMIN CAP_NET_RAW CAP_SETGID CAP_SETUID CAP_SYS_CHROOT CAP_DAC_OVERRIDE
-LimitNPROC=10
-DeviceAllow=/dev/null rw
+
+RestrictNamespaces=yes
+PrivateTmp=yes
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectProc=invisible
+ProtectSystem=strict
+ReadWritePaths=/var/log/aws-vpn-client/ /run/openvpn-client/%i/
+RestrictSUIDSGID=yes
+DevicePolicy=closed
 DeviceAllow=/dev/net/tun rw
-ProtectSystem=true
-ProtectHome=true
-KillMode=process
+AmbientCapabilities=CAP_IPC_LOCK CAP_NET_ADMIN CAP_NET_RAW
+CapabilityBoundingSet=CAP_IPC_LOCK CAP_NET_ADMIN CAP_NET_RAW
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_PACKET AF_NETLINK
+NoNewPrivileges=yes
+LimitNPROC=10
 
 [Install]
 WantedBy=multi-user.target

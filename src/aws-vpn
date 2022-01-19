@@ -9,7 +9,7 @@ VPN_INSTANCE="$1"
 VPN_CONF="/etc/openvpn/client/$VPN_INSTANCE.conf"
 VPN_HOSTNAME=$(sed -rn 's/remote ([^[:space:]]+) [[:digit:]]+$/\1/p' "$VPN_CONF")
 VPN_PORT=$(sed -rn 's/remote [^[:space:]]+ ([[:digit:]]+)$/\1/p' "$VPN_CONF")
-VPN_MGMT_SOCKET="/run/openvpn-client/$VPN_INSTANCE.sock"
+VPN_MGMT_SOCKET="/run/openvpn-client/$VPN_INSTANCE/mgmt.sock"
 
 read -r -d '' SAML_RESPONSE <<'HTTP'
 HTTP/1.1 200 OK
