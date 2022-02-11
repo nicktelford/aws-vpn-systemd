@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-NETCAT_CMD=$(which ncat 2>/dev/null || which nc 2>/dev/null)
+NETCAT_CMD=$(which ncat 2>/dev/null || which nc 2>/dev/null || which netcat 2>/dev/null)
 BROWSER_CMD=$(which xdg-open 2>/dev/null || echo $BROWSER)
 VPN_CMD="/opt/awsvpnclient/Service/Resources/openvpn/acvc-openvpn" # patched OpenVPN client
 
