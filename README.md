@@ -8,8 +8,9 @@ instead of the Amazon GUI._
 * BASH 4+
 * SystemD
 * The AWS VPN client or a compatibly patched OpenVPN client
-* A `netcat` implementation (e.g. `nc`, `ncat`)
-* `sed`, `awk` and other basic utilities
+* Nmap/OpenBSD netcat (i.e. `ncat`).
+  - Note: GNU Netcat is _NOT_ supported.
+* `grep`, `sed`, `awk` and other basic utilities
 
 Note: if you use a patched OpenVPN client, you will either need to install it
 at `/opt/awsvpnclient/Service/Resources/openvpn/acvc-openvpn` or replace the
