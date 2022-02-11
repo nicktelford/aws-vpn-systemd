@@ -62,7 +62,7 @@ auth() {
   # create a trap that will close the "web server" process as well if this script is aborted by CTRL+C
   trap "kill $pid 2> /dev/null" EXIT
 
-  $BROWSER_CMD $(echo "$out" | grep -Eo 'https://[^[:space:]]+')
+  $BROWSER_CMD $(echo "$out" | grep -Eo 'https://[^[:space:]]+') >/dev/null 2>&1
 
   local response=$(cat <&3)
 
