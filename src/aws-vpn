@@ -3,7 +3,7 @@ NETCAT_CMD=$(which ncat 2>/dev/null || which nc 2>/dev/null)
 BROWSER_CMD=$(which xdg-open 2>/dev/null || echo $BROWSER)
 VPN_CMD="/opt/awsvpnclient/Service/Resources/openvpn/acvc-openvpn" # patched OpenVPN client
 
-SAML_RESPONSE_TIMEOUT=30
+SAML_RESPONSE_TIMEOUT=300
 
 VPN_INSTANCE="$1"
 VPN_CONF="/etc/openvpn/client/$VPN_INSTANCE.conf"
