@@ -14,10 +14,7 @@ WorkingDirectory=/tmp
 
 ExecStart=bash /usr/local/bin/aws-vpn %i
 
-PrivateTmp=yes
 DevicePolicy=closed
-ProtectSystem=strict
-ProtectHome=read-only
 
 [Install]
 WantedBy=multi-user.target
