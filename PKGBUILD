@@ -8,8 +8,9 @@ arch=('any')
 url="https://github.com/nicktelford/aws-vpn-systemd"
 license=('GPL')
 depends=('awsvpnclient' 'systemd' 'polkit')
-optdepends=('openbsd-netcat: netcat implementation' 'nmap: netcat implementation')
-conflicts=('gnu-netcat')
+optdepends=('socat: preferred network tool (supports all operations)'
+            'nmap: provides ncat, a supported alternative to socat'
+            'openbsd-netcat: supported alternative to socat')
 sha256sums=()
 source=()
 validpgpkeys=()

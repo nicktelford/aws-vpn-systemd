@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-NETCAT_CMD=$(which ncat 2>/dev/null || which nc 2>/dev/null || which netcat 2>/dev/null)
 BROWSER_CMD=$(which xdg-open 2>/dev/null || echo $BROWSER)
 VPN_CMD="/opt/awsvpnclient/Service/Resources/openvpn/acvc-openvpn" # patched OpenVPN client
 
@@ -17,6 +16,26 @@ HTTP/1.1 200 OK
 <script>window.close('','_parent','');</script>
 Got SAMLResponse field, it is now safe to close this window
 HTTP
+
+detect_tools() {
+  if command -v socat >/dev/null 2>&1; then
+    tcp_listen()   { socat - "TCP-LISTEN:$1,reuseaddr"; }
+    unix_connect() { socat - "UNIX-CONNECT:$1"; }
+  elif command -v ncat >/dev/null 2>&1; then
+    tcp_listen()   { ncat -l "$1"; }
+    unix_connect() { ncat -U "$1"; }
+  elif command -v nc >/dev/null 2>&1 && nc -h 2>&1 | grep -qi 'openbsd'; then
+    tcp_listen()   { nc -l "$1"; }
+    unix_connect() { nc -U "$1"; }
+  elif command -v netcat >/dev/null 2>&1 && netcat -h 2>&1 | grep -qi 'openbsd'; then
+    tcp_listen()   { netcat -l "$1"; }
+    unix_connect() { netcat -U "$1"; }
+  else
+    echo "ERROR: No supported network tool found. Install one of: socat, nmap (for ncat), or openbsd-netcat." >&2
+    exit 1
+  fi
+  export -f tcp_listen unix_connect
+}
 
 resolve_host() {
   host="$1"
@@ -56,7 +75,7 @@ auth() {
   local sid=$(echo "$out" | sed -rn 's/.*AUTH_FAILED,CRV1:R:([^:]+):.*/\1/p')
 
   # start a "web server" that will receive the saml response from the idp
-  exec 3< <(echo -e "$SAML_RESPONSE" | timeout $timeout ${NETCAT_CMD} -l $local_port)
+  exec 3< <(echo -e "$SAML_RESPONSE" | timeout "$timeout" bash -c 'tcp_listen "$1"' -- "$local_port")
   local pid=$!
 
   # create a trap that will close the "web server" process as well if this script is aborted by CTRL+C
@@ -83,6 +102,8 @@ auth() {
   return 0
 }
 
+detect_tools
+
 if [ ! -S "$VPN_MGMT_SOCKET" ]; then
   echo -e "ERROR: No OpenVPN client service is running for $VPN_INSTANCE. Start one with:\n  $ systemctl start aws-vpn@$VPN_INSTANCE.service" >&2
   exit 1
@@ -104,7 +125,7 @@ fi
 VPN_SRV=$(resolve_host ${VPN_HOSTNAME})
 
 # connect to OpenVPN client management socket
-coproc setsid -w sg "$VPN_GROUP" "$NETCAT_CMD -U $VPN_MGMT_SOCKET"
+coproc setsid -w sg "$VPN_GROUP" "bash -c 'unix_connect \"\$1\"' -- $VPN_MGMT_SOCKET"
 NC_OUT=${COPROC[0]}
 NC_IN=${COPROC[1]}
 MGMT_PID=${COPROC_PID}
