@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connected to AWS VPN</title>
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --card: #ffffff;
+      --text: #1a1a2e;
+      --subtext: #555e6e;
+      --accent: #2e7d32;
+      --check-bg: #e8f5e9;
+      --check: #2e7d32;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #12141a;
+        --card: #1e2130;
+        --text: #e8eaf0;
+        --subtext: #9aa3b5;
+        --accent: #66bb6a;
+        --check-bg: #1b2e1c;
+        --check: #66bb6a;
+      }
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 48px 56px;
+      text-align: center;
+      box-shadow: 0 4px 24px rgba(0,0,0,.10);
+      max-width: 400px;
+      width: 90%;
+    }
+    .icon-wrap {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--check-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 28px;
+    }
+    .icon-wrap svg {
+      width: 38px;
+      height: 38px;
+    }
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+      letter-spacing: -.01em;
+    }
+    p {
+      font-size: 0.95rem;
+      color: var(--subtext);
+      line-height: 1.5;
+    }
+  </style>
+  <script>window.close('', '_parent', '');</script>
+</head>
+<body>
+  <div class="card">
+    <div class="icon-wrap">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="12" cy="12" r="11" stroke="var(--check)" stroke-width="2"/>
+        <path d="M7 12.5l3.5 3.5 6.5-7" stroke="var(--check)" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h1>Connected to AWS VPN</h1>
+    <p>You can safely close this window.</p>
+  </div>
+</body>
+</html>

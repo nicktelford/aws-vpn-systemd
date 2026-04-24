@@ -4,18 +4,22 @@ VPN_CMD="/opt/awsvpnclient/Service/Resources/openvpn/acvc-openvpn" # patched Ope
 
 SAML_RESPONSE_TIMEOUT=300
 
+HTML_BODY="/usr/local/share/aws-vpn-systemd/connected.html"
+if [ ! -f "$HTML_BODY" ]; then
+  HTML_BODY="$(dirname "$(readlink -f "$0")")/connected.html"
+fi
+if [ ! -f "$HTML_BODY" ]; then
+  echo "ERROR: Cannot find connected.html (looked in /usr/local/share/aws-vpn-systemd/ and next to aws-vpn script)." >&2
+  exit 1
+fi
+
+HTTP_HEADERS="$(printf 'HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n')"
+
 VPN_INSTANCE="$1"
 VPN_CONF="/etc/openvpn/client/$VPN_INSTANCE.conf"
 VPN_HOSTNAME=$(sed -rn 's/remote ([^[:space:]]+) [[:digit:]]+$/\1/p' "$VPN_CONF")
 VPN_PORT=$(sed -rn 's/remote [^[:space:]]+ ([[:digit:]]+)$/\1/p' "$VPN_CONF")
 VPN_MGMT_SOCKET="/run/openvpn-client/$VPN_INSTANCE/mgmt.sock"
-
-read -r -d '' SAML_RESPONSE <<'HTTP'
-HTTP/1.1 200 OK
-
-<script>window.close('','_parent','');</script>
-Got SAMLResponse field, it is now safe to close this window
-HTTP
 
 detect_tools() {
   if command -v socat >/dev/null 2>&1; then
@@ -75,7 +79,7 @@ auth() {
   local sid=$(echo "$out" | sed -rn 's/.*AUTH_FAILED,CRV1:R:([^:]+):.*/\1/p')
 
   # start a "web server" that will receive the saml response from the idp
-  exec 3< <(echo -e "$SAML_RESPONSE" | timeout "$timeout" bash -c 'tcp_listen "$1"' -- "$local_port")
+  exec 3< <({ printf '%s' "$HTTP_HEADERS"; cat "$HTML_BODY"; } | timeout "$timeout" bash -c 'tcp_listen "$1"' -- "$local_port")
   local pid=$!
 
   # create a trap that will close the "web server" process as well if this script is aborted by CTRL+C
