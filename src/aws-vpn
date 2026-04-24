@@ -13,7 +13,6 @@ if [ ! -f "$HTML_BODY" ]; then
   exit 1
 fi
 
-HTTP_HEADERS="$(printf 'HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n')"
 
 VPN_INSTANCE="$1"
 VPN_CONF="/etc/openvpn/client/$VPN_INSTANCE.conf"
@@ -79,7 +78,7 @@ auth() {
   local sid=$(echo "$out" | sed -rn 's/.*AUTH_FAILED,CRV1:R:([^:]+):.*/\1/p')
 
   # start a "web server" that will receive the saml response from the idp
-  exec 3< <({ printf '%s' "$HTTP_HEADERS"; cat "$HTML_BODY"; } | timeout "$timeout" bash -c 'tcp_listen "$1"' -- "$local_port")
+  exec 3< <({ printf 'HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n'; cat "$HTML_BODY"; } | timeout "$timeout" bash -c 'tcp_listen "$1"' -- "$local_port")
   local pid=$!
 
   # create a trap that will close the "web server" process as well if this script is aborted by CTRL+C
