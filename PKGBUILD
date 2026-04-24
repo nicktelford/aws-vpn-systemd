@@ -1,6 +1,6 @@
 # Maintainer: Nick Telford <nick.telford@gmail.com>
 pkgname=aws-vpn-systemd
-pkgver=1
+pkgver=1.1
 pkgrel=1
 epoch=
 pkgdesc="A set of SystemD services for managing the AWS VPN without the GUI."
