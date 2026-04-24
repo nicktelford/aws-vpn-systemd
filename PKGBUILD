@@ -19,5 +19,6 @@ package() {
   install -Dm644 "$srcdir/00-openvpn-resolved.rules" "$pkgdir/etc/polkit-1/rules.d/00-openvpn-resolved.rules"
   install -Dm644 "$srcdir/system_aws-vpn@.service" "$pkgdir/usr/local/lib/systemd/system/aws-vpn@.service"
   install -Dm644 "$srcdir/user_aws-vpn@.service" "$pkgdir/usr/local/lib/systemd/user/aws-vpn@.service"
+  install -Dm755 "$srcdir/aws-vpn-sleep" "$pkgdir/usr/lib/systemd/system-sleep/aws-vpn"
 }
 

@@ -74,6 +74,9 @@ $ systemctl --user stop aws-vpn@<instance>
 Note: you should not need to stop/restart the _system_ unit, which can be used
 to connect/disconnect/reconnect to the same VPN multiple times.
 
+If the machine is suspended while the VPN is connected, it will automatically
+reconnect on resume. A browser window will open to re-authenticate via SAML.
+
 ## Installation
 
 To build an Arch Linux package and install it:
@@ -88,6 +91,7 @@ To manually install, copy the included files to the correct locations:
 * `sudo cp user_aws-vpn@.service /usr/local/lib/systemd/user/aws-vpn@.service`
 * `sudo cp aws-vpn /usr/local/bin/aws-vpn`
 * `sudo cp 00-openvpn-resolved.rules /etc/polkit-1/rules.d/`
+* `sudo install -m755 aws-vpn-sleep /usr/lib/systemd/system-sleep/aws-vpn`
 
 Note: if you are not using the AWS VPN client, or have it installed in a
 different location, you may need to edit `system_aws-vpn@.service` to modify

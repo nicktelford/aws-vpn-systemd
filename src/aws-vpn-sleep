@@ -1,0 +1,6 @@
+#!/bin/sh
+# Restart any active AWS VPN connections after resume from suspend/hibernate.
+[ "$1" = "post" ] || exit 0
+systemctl list-units --state=active --no-legend 'aws-vpn@*.service' \
+  | awk '{print $1}' \
+  | xargs -r systemctl try-restart
