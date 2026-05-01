@@ -59,8 +59,6 @@ auth() {
     --auth-retry none \
     --auth-user-pass <( printf "%s\n%s\n" "N/A" "ACS::$local_port" ) \
     2>&1)
-  echo "$probe_out" >&2
-
   local out
   out=$(echo "$probe_out" | grep "AUTH_FAILED,CRV1")
 
