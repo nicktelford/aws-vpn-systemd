@@ -137,3 +137,12 @@ system service verifies group membership over the socket.
 
 VPN configuration lives in `/etc/openvpn/client/<name>.conf`, e.g.
 `/etc/openvpn/client/myvpn.example.com.conf`.
+
+The SAML authentication probe uses a fixed local TCP port (35001) as
+the callback address in the `ACS::35001` credential sent to the VPN
+server. This port must match the Assertion Consumer Service URL
+registered in the SAML IdP application (`http://127.0.0.1:35001/`),
+which is fixed at configuration time. As a result, only one VPN
+authentication can be in progress at a time — starting a second
+`aws-vpn@<name>` user unit while another is mid-authentication will
+cause the second probe to fail.
