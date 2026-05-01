@@ -5,6 +5,14 @@ on:
     branches: [main]
 
 jobs:
+  lint:
+    name: Lint scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y shellcheck
+      - run: shellcheck src/aws-vpn src/aws-vpn-sleep src/dns-up src/dns-down
+
   build-deb:
     name: Build Debian package
     runs-on: ubuntu-latest
@@ -40,7 +48,7 @@ jobs:
 
   publish:
     name: Publish packages
-    needs: [build-deb, build-rpm, build-pkg]
+    needs: [lint, build-deb, build-rpm, build-pkg]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -49,7 +57,7 @@ jobs:
 
       - id: version
         run: |
-          echo "value=$(grep -m1 '^VERSION[[:space:]]*:=' Makefile | cut -d= -f2 | tr -d ' ')" \
+          echo "value=$(awk -F'[[:space:]:=]+' '$1=="VERSION"{print $2; exit}' Makefile)" \
             >> "$GITHUB_OUTPUT"
 
       - uses: actions/download-artifact@v4
