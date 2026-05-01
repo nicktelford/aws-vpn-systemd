@@ -50,15 +50,21 @@ than stock OpenVPN's 128-byte limit.
 Replace `<instance>` with the hostname of your VPN. Multiple VPNs may be
 configured by repeating these steps for each one.
 
-Add yourself to the `openvpn` group, then log out and back in for it to take effect:
+To connect, your user must be a member of the `wheel` group (Arch, Fedora) or
+`sudo` group (Ubuntu/Debian). On most systems your admin user is already a
+member; if not, add yourself and log out and back in:
 
 ```
-$ sudo usermod -aG openvpn $USER
+# Arch / Fedora
+$ sudo usermod -aG wheel $USER
+
+# Ubuntu / Debian
+$ sudo usermod -aG sudo $USER
 ```
 
 Place the configuration file for your VPN in `/etc/openvpn/client/<instance>.conf`.
 If this directory doesn't exist, create it. Files should be owned by
-`openvpn:openvpn`.
+`openvpn:wheel` (or `openvpn:sudo` on Ubuntu/Debian).
 
 If your VPN configuration file includes the `auth-federate` directive, remove
 it — this is not understood by OpenVPN and is merely used as a marker to
@@ -119,7 +125,8 @@ routes. The user unit handles SAML authentication via a browser window in the
 local user's session.
 
 The two services communicate over the OpenVPN management interface on a UNIX
-domain socket. A user must be a member of the `openvpn` group to connect; the
+domain socket. A user must be a member of the `wheel` group (or `sudo` on
+Ubuntu/Debian) to connect; the
 system service verifies group membership over the socket.
 
 VPN configuration lives in `/etc/openvpn/client/<instance>.conf`, e.g.

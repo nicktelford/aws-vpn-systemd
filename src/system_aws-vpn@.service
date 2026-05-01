@@ -10,7 +10,7 @@ Documentation=https://github.com/nicktelford/aws-vpn-systemd
 [Service]
 Type=simple
 User=openvpn
-Group=openvpn
+Group=wheel
 KillMode=process
 
 ConfigurationDirectory=openvpn/client
@@ -22,7 +22,7 @@ RestartSec=10s
 ExecStart=/usr/local/bin/acvc-openvpn \
   --suppress-timestamps --nobind --config /etc/openvpn/client/%i.conf \
   --management /run/openvpn-client/%i/mgmt.sock unix \
-  --management-client-group openvpn \
+  --management-client-group wheel \
   --management-hold --management-query-remote --management-query-passwords \
   --script-security 2 \
   --up /usr/local/bin/vpn-dns-up \

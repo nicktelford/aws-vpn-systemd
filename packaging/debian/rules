@@ -36,7 +36,9 @@ override_dh_auto_install:
 		$(CURDIR)/debian/aws-vpn-systemd/usr/local/bin/vpn-dns-down
 	install -Dm644 $(CURDIR)/src/00-openvpn-resolved.rules \
 		$(CURDIR)/debian/aws-vpn-systemd/etc/polkit-1/rules.d/00-openvpn-resolved.rules
-	install -Dm644 $(CURDIR)/src/system_aws-vpn@.service \
+	install -dm755 $(CURDIR)/debian/aws-vpn-systemd/usr/local/lib/systemd/system
+	sed 's/wheel/sudo/g' $(CURDIR)/src/system_aws-vpn@.service \
+		| install -m644 /dev/stdin \
 		$(CURDIR)/debian/aws-vpn-systemd/usr/local/lib/systemd/system/aws-vpn@.service
 	install -Dm644 $(CURDIR)/src/user_aws-vpn@.service \
 		$(CURDIR)/debian/aws-vpn-systemd/usr/local/lib/systemd/user/aws-vpn@.service
