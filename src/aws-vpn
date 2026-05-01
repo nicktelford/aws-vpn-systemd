@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-BROWSER_CMD=$(which xdg-open 2>/dev/null || echo $BROWSER)
-VPN_CMD="/usr/local/bin/acvc-openvpn"
+BROWSER_CMD=$(command -v xdg-open 2>/dev/null || printf '%s' "${BROWSER-}")
+VPN_CMD="/usr/bin/acvc-openvpn"
 
-SAML_RESPONSE_TIMEOUT=300
+SAML_RESPONSE_TIMEOUT=${SAML_RESPONSE_TIMEOUT:-300}
 
-HTML_BODY="/usr/local/share/aws-vpn-systemd/connected.html"
+HTML_BODY="/usr/share/aws-vpn-systemd/connected.html"
 if [ ! -f "$HTML_BODY" ]; then
   HTML_BODY="$(dirname "$(readlink -f "$0")")/connected.html"
 fi
 if [ ! -f "$HTML_BODY" ]; then
-  echo "ERROR: Cannot find connected.html (looked in /usr/local/share/aws-vpn-systemd/ and next to aws-vpn script)." >&2
+  echo "ERROR: Cannot find connected.html (looked in /usr/share/aws-vpn-systemd/ and next to aws-vpn script)." >&2
   exit 1
 fi
 
 
 VPN_INSTANCE="$1"
 VPN_CONF="/etc/openvpn/client/$VPN_INSTANCE.conf"
-VPN_HOSTNAME=$(sed -rn 's/remote ([^[:space:]]+) [[:digit:]]+$/\1/p' "$VPN_CONF")
-VPN_PORT=$(sed -rn 's/remote [^[:space:]]+ ([[:digit:]]+)$/\1/p' "$VPN_CONF")
+VPN_HOSTNAME=$(sed -rn 's/^[[:space:]]*remote[[:space:]]+([^[:space:]]+)[[:space:]]+[[:digit:]]+([[:space:]].*)?$/\1/p' "$VPN_CONF" | head -n1)
+VPN_PORT=$(sed -rn 's/^[[:space:]]*remote[[:space:]]+[^[:space:]]+[[:space:]]+([[:digit:]]+)([[:space:]].*)?$/\1/p' "$VPN_CONF" | head -n1)
 VPN_MGMT_SOCKET="/run/openvpn-client/$VPN_INSTANCE/mgmt.sock"
 
 tcp_listen()   { socat - "TCP-LISTEN:$1,reuseaddr"; }
@@ -25,19 +25,20 @@ unix_connect() { socat - "UNIX-CONNECT:$1"; }
 export -f tcp_listen unix_connect
 
 resolve_host() {
-  host="$1"
+  local host="$1"
+  local cmd
 
-  if cmd=$(which dig); then
-    $cmd a +short $host | sed -r '/[^[:digit:].]+/d' | head -n 1 
+  if cmd=$(command -v dig 2>/dev/null); then
+    "$cmd" a +short "$host" | sed -r '/[^[:digit:].]+/d' | head -n 1
     return $?
-  elif cmd=$(which host); then
-    $cmd $host | sed -rn '{0,/has address/ s/.*has address ([[:digit:].]+)/\1/p;}'
+  elif cmd=$(command -v host 2>/dev/null); then
+    "$cmd" "$host" | sed -rn '{0,/has address/ s/.*has address ([[:digit:].]+)/\1/p;}'
     return $?
-  elif cmd=$(which nslookup); then
-    $cmd $host | sed -rn '{0,/Address: / s/Address: //p}'
+  elif cmd=$(command -v nslookup 2>/dev/null); then
+    "$cmd" "$host" | sed -rn '{0,/Address: / s/Address: //p}'
     return $?
-  elif cmd=$(which getent); then
-    $cmd hosts $host | awk '{print $1; exit}'
+  elif cmd=$(command -v getent 2>/dev/null); then
+    "$cmd" hosts "$host" | awk '{print $1; exit}'
     return $?
   else
     return 1
@@ -50,27 +51,31 @@ auth() {
   local conf="$3"
   local timeout="${4:-30}"
 
-  local local_port=35001
+  # Derive a per-instance port so concurrent instances don't collide.
+  local local_port=$(( 35001 + ($(printf '%s' "$VPN_INSTANCE" | cksum | cut -d' ' -f1) % 1000) ))
 
-  local out=$($VPN_CMD --remote "$addr" "$port" --config "$conf" \
+  local out
+  out=$("$VPN_CMD" --remote "$addr" "$port" --config "$conf" \
     --auth-retry none \
     --auth-user-pass <( printf "%s\n%s\n" "N/A" "ACS::$local_port" ) \
     | grep "AUTH_FAILED,CRV1"
   )
 
   # get SID from the reply
-  local sid=$(echo "$out" | sed -rn 's/.*AUTH_FAILED,CRV1:R:([^:]+):.*/\1/p')
+  local sid
+  sid=$(echo "$out" | sed -rn 's/.*AUTH_FAILED,CRV1:R:([^:]+):.*/\1/p')
 
   # start a "web server" that will receive the saml response from the idp
   exec 3< <({ printf 'HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n'; cat "$HTML_BODY"; } | timeout "$timeout" bash -c 'tcp_listen "$1"' -- "$local_port")
   local pid=$!
 
   # create a trap that will close the "web server" process as well if this script is aborted by CTRL+C
-  trap "kill $pid 2> /dev/null" EXIT
+  trap "kill $pid 2>/dev/null" EXIT
 
-  $BROWSER_CMD $(echo "$out" | grep -Eo 'https://[^[:space:]]+') >/dev/null 2>&1
+  "$BROWSER_CMD" "$(echo "$out" | grep -Eo 'https://[^[:space:]]+')" >/dev/null 2>&1 &
 
-  local response=$(cat <&3)
+  local response
+  response=$(cat <&3)
 
   wait $pid
 
@@ -96,7 +101,7 @@ fi
 
 VPN_GROUP=$(stat -c '%G' "$VPN_MGMT_SOCKET")
 
-if ! groups | grep -P "\\b$VPN_GROUP\\b" >/dev/null; then
+if ! id -Gn | tr ' ' '\n' | grep -Fxq "$VPN_GROUP"; then
   echo "ERROR: User $USER is not in the '$VPN_GROUP' group." >&2
   exit 1
 fi
@@ -107,10 +112,10 @@ if [ -z "$VPN_PORT" ]; then
 fi
 
 # fetch/cache one ip address of the vpn endpoint. The same ip needs to be used for both the below vpn connections
-VPN_SRV=$(resolve_host ${VPN_HOSTNAME})
+VPN_SRV=$(resolve_host "$VPN_HOSTNAME")
 
 # connect to OpenVPN client management socket
-coproc setsid -w sg "$VPN_GROUP" "bash -c 'unix_connect \"\$1\"' -- $VPN_MGMT_SOCKET"
+coproc setsid -w sg "$VPN_GROUP" "bash -c 'unix_connect \"\$1\"' -- '$VPN_MGMT_SOCKET'"
 NC_OUT=${COPROC[0]}
 NC_IN=${COPROC[1]}
 MGMT_PID=${COPROC_PID}
@@ -136,7 +141,7 @@ do
     ">PASSWORD")
       if [[ "$data" == "Need 'Auth' username/password"* ]]; then
         echo "Opening browser and waiting for the SAML response..."
-        if pass=$(auth ${VPN_SRV} ${VPN_PORT} ${VPN_CONF} ${SAML_RESPONSE_TIMEOUT}); then
+        if pass=$(auth "$VPN_SRV" "$VPN_PORT" "$VPN_CONF" "$SAML_RESPONSE_TIMEOUT"); then
           echo "username \"Auth\" \"N/A\"" >&$NC_IN
           echo "password \"Auth\" \"$pass\"" >&$NC_IN
         fi
