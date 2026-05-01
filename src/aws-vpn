@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 BROWSER_CMD=$(which xdg-open 2>/dev/null || echo $BROWSER)
-VPN_CMD="/opt/awsvpnclient/Service/Resources/openvpn/acvc-openvpn" # patched OpenVPN client
+VPN_CMD="/usr/local/bin/acvc-openvpn"
 
 SAML_RESPONSE_TIMEOUT=300
 

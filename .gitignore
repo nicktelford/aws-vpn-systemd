@@ -1,5 +1,9 @@
 *.pkg.tar.xz
+*.pkg.tar.zst
 .BUILDINFO
 .MTREE
 .PKGINFO
 pkg/
+src/openvpn/
+src/openssl/
+src/openvpn-*.tar.gz
