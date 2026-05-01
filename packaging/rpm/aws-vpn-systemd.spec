@@ -71,6 +71,7 @@ install -Dm644 src/connected.html \
     %{buildroot}/usr/local/share/%{name}/connected.html
 install -Dm644 %{SOURCE2} \
     %{buildroot}%{_sysusersdir}/%{name}.conf
+install -dm755 %{buildroot}/etc/openvpn/client
 
 %pre
 %sysusers_create_compat %{SOURCE2}
@@ -84,6 +85,7 @@ install -Dm644 %{SOURCE2} \
 /usr/local/lib/systemd/system/aws-vpn@.service
 /usr/local/lib/systemd/user/aws-vpn@.service
 /usr/lib/systemd/system-sleep/aws-vpn
+%dir /etc/openvpn/client
 %dir /usr/local/share/%{name}
 /usr/local/share/%{name}/connected.html
 %{_sysusersdir}/%{name}.conf
