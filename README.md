@@ -1,13 +1,12 @@
 # AWS VPN (with SystemD)
 
-_SystemD units and helper scripts to manage AWS VPN connections using SystemD,
-instead of the Amazon GUI._
+_SystemD units and helper scripts to manage AWS Client VPN connections using
+SystemD, instead of the Amazon GUI._
 
 ## Pre-requisites
 
+* Arch Linux (or another distro with SystemD and `makepkg`)
 * BASH 4+
-* SystemD
-* The AWS VPN client or a compatibly patched OpenVPN client
 * One of the following network tools:
   - `socat` (preferred)
   - Nmap `ncat`
@@ -15,115 +14,100 @@ instead of the Amazon GUI._
   - Note: GNU Netcat and `netcat-traditional` are _NOT_ supported.
 * `grep`, `sed`, `awk` and other basic utilities
 
-Note: if you use a patched OpenVPN client, you will either need to install it
-at `/opt/awsvpnclient/Service/Resources/openvpn/acvc-openvpn` or replace the
-paths in the source files in this repo.
-
-## Assumptions
-
-* The `openvpn` user exists, and the VPN client should run as this user.
-* The `network` group exists, and members of this group may manage VPN connections.
-* AWS VPN configuration files are stored in `/etc/openvpn/client/<instance>.conf`,
-  where `<instance>` is the hostname of your VPN.
-* Your DNS configuration is being managed by `systemd-resolved`
-
-## Usage
-
-Replace `<instance>` with the hostname of your VPN below. Multiple VPNs may be
-configured by repeating these steps for each VPN.
-
-First, install the files, either using the Arch package, or manually as described below.
-
-Place the configuration file for your VPN in `/etc/openvpn/client/<instance>.conf`.
-If this directory doesn't exist, create it. These files should be owned by
-user:group `openvpn:network`.
-
-If your VPN configuration file included the `auth-federate` directive, remove it
-as this is not understood by the OpenVPN client and is merely used as a marker
-to indicate that this is an Amazon VPN configuration.
-
-Next, enable the _system_ unit for the VPN:
-
-```
-$ systemctl enable aws-vpn@<instance>
-```
-
-Then start it:
-
-```
-$ systemctl start aws-vpn@<instance>
-```
-
-This will now automatically be enabled at start-up, and you will not need to
-type these commands again.
-
-To connect to the VPN, start the _user_ unit:
-
-```
-$ systemctl --user start aws-vpn@<instance>
-```
-
-This will open a browser window to authenticate you according to your VPNs
-SAML authentication flow. Once complete, if the browser tab/window doesn't
-automatically close, it can be safely closed. 
-
-To disconnect the VPN, stop only the _user_ unit:
-
-```
-$ systemctl --user stop aws-vpn@<instance>
-```
-
-Note: you should not need to stop/restart the _system_ unit, which can be used
-to connect/disconnect/reconnect to the same VPN multiple times.
-
-If the machine is suspended while the VPN is connected, it will automatically
-reconnect on resume. A browser window will open to re-authenticate via SAML.
-
 ## Installation
 
-To build an Arch Linux package and install it:
+Build and install the Arch package:
 
 ```
 $ makepkg -si
 ```
 
-To manually install, copy the included files to the correct locations:
+This compiles a patched OpenVPN binary from [AWS's GPL source release][aws-source]
+and installs it alongside the SystemD units and helper scripts. The patched
+build is required because AWS Client VPN uses the OpenVPN management interface
+to carry SAML assertions, which can be up to 128 KB — far larger than stock
+OpenVPN's 128-byte limit.
 
-* `sudo cp system_aws-vpn@.service /usr/local/lib/systemd/system/aws-vpn@.service`
-* `sudo cp user_aws-vpn@.service /usr/local/lib/systemd/user/aws-vpn@.service`
-* `sudo cp aws-vpn /usr/local/bin/aws-vpn`
-* `sudo cp 00-openvpn-resolved.rules /etc/polkit-1/rules.d/`
-* `sudo install -m755 aws-vpn-sleep /usr/lib/systemd/system-sleep/aws-vpn`
-* `sudo install -m755 vpn-dns-up vpn-dns-down /usr/local/bin/`
+[aws-source]: https://amazon-source-code-downloads.s3.amazonaws.com/aws/clientvpn/openvpn-2.6.12-aws-1.tar.gz
 
-Note: if you are not using the AWS VPN client, or have it installed in a
-different location, you may need to edit `system_aws-vpn@.service` to modify
-the directory it searches for the various files.
+## Assumptions
+
+* The `openvpn` user exists, and the VPN should run as this user.
+* The `network` group exists, and members of this group may manage VPN connections.
+* AWS VPN configuration files are stored in `/etc/openvpn/client/<instance>.conf`,
+  where `<instance>` is the hostname of your VPN.
+* DNS is managed by `systemd-resolved`.
+
+## Usage
+
+Replace `<instance>` with the hostname of your VPN. Multiple VPNs may be
+configured by repeating these steps for each one.
+
+Place the configuration file for your VPN in `/etc/openvpn/client/<instance>.conf`.
+If this directory doesn't exist, create it. Files should be owned by
+`openvpn:network`.
+
+If your VPN configuration file includes the `auth-federate` directive, remove
+it — this is not understood by OpenVPN and is merely used as a marker to
+indicate an Amazon VPN configuration.
+
+Enable and start the _system_ unit:
+
+```
+$ systemctl enable --now aws-vpn@<instance>
+```
+
+This starts the OpenVPN process and keeps it running across reboots. You only
+need to do this once per VPN.
+
+To connect (authenticate and bring the tunnel up), start the _user_ unit:
+
+```
+$ systemctl --user start aws-vpn@<instance>
+```
+
+This opens a browser window to complete SAML authentication. Once done, the
+browser tab can be safely closed if it doesn't close automatically.
+
+To disconnect, stop only the _user_ unit:
+
+```
+$ systemctl --user stop aws-vpn@<instance>
+```
+
+The _system_ unit keeps running; you can reconnect at any time by starting
+the user unit again.
+
+If the machine is suspended while the VPN is connected, it will automatically
+reconnect on resume, opening a browser window to re-authenticate.
 
 ## Debugging
 
-* System unit logs: `journalctl -u aws-vpn@<instance>`
-* User unit logs: `journalctl --user -u aws-vpn@<instance>`
+System unit logs:
+```
+$ journalctl -u aws-vpn@<instance>
+```
 
-Check both sets of logs for signs of problems, as issues can arise in either of
-them.
+User unit logs:
+```
+$ journalctl --user -u aws-vpn@<instance>
+```
 
-If you're able to connect, but are having issues resolving hostnames of some
-services; first verify you're using systemd-resolved, and if you are, try
-adding `dhcp-option DOMAIN-ROUTE .` to your VPN configuration file.
+Check both — issues can arise in either.
+
+If you can connect but DNS resolution fails for some services, verify you're
+using `systemd-resolved`, then try adding `dhcp-option DOMAIN-ROUTE .` to
+your VPN configuration file.
 
 ## Details
 
-The system service actually connects to the VPN, installs the routes etc.
-The user service takes care of doing the SSO authentication via SAML and a
-browser window in the local user's session.
+The system unit runs the OpenVPN process, connects to the VPN, and installs
+routes. The user unit handles SAML authentication via a browser window in the
+local user's session.
 
-The two services communicate via the OpenVPN management interface, over a UNIX
-domain socket.
+The two services communicate over the OpenVPN management interface on a UNIX
+domain socket. A user must be a member of the `network` group to connect; the
+system service verifies group membership over the socket.
 
-In order to connect, a user must be a member of the `network` group. The
-system service verifies connections over the UNIX domain socket are from within
-this group.
-
-To configure the VPN, the instance files are in `/etc/openvpn/client/<instance>.conf`,
-e.g. /etc/openvpn/client/myvpn.example.com.conf
+VPN configuration lives in `/etc/openvpn/client/<instance>.conf`, e.g.
+`/etc/openvpn/client/myvpn.example.com.conf`.
