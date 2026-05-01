@@ -1,12 +1,11 @@
-*.pkg.tar.xz
-*.pkg.tar.zst
-.BUILDINFO
-.MTREE
-.PKGINFO
-pkg/
-src/openvpn/
-src/openvpn-*/
-src/openssl/
-src/openvpn-*.tar.gz
-src/openvpn-*.patch
-openvpn-*.tar.gz
+# Arch packaging artifacts (if building locally without Docker)
+packaging/arch/src/
+packaging/arch/pkg/
+packaging/arch/*.pkg.tar.xz
+packaging/arch/*.pkg.tar.zst
+packaging/arch/.BUILDINFO
+packaging/arch/.MTREE
+packaging/arch/.PKGINFO
+
+# Build output
+dist/

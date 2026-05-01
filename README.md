@@ -5,7 +5,7 @@ SystemD, instead of the Amazon GUI._
 
 ## Pre-requisites
 
-* Arch Linux (or another distro with SystemD and `makepkg`)
+* Linux with SystemD
 * BASH 4+
 * One of the following network tools:
   - `socat` (preferred)
@@ -16,17 +16,32 @@ SystemD, instead of the Amazon GUI._
 
 ## Installation
 
-Build and install the Arch package:
+Packages are built using Docker — no distro-specific toolchain needs to be
+installed locally. Built packages are written to `dist/`.
 
+**Arch Linux:**
 ```
-$ makepkg -si
+$ make pkg
+$ pacman -U dist/aws-vpn-systemd-*.pkg.tar.zst
 ```
 
-This compiles a patched OpenVPN binary from [AWS's GPL source release][aws-source]
-and installs it alongside the SystemD units and helper scripts. The patched
-build is required because AWS Client VPN uses the OpenVPN management interface
-to carry SAML assertions, which can be up to 128 KB — far larger than stock
-OpenVPN's 128-byte limit.
+**Ubuntu / Debian:**
+```
+$ make deb
+$ apt install ./dist/aws-vpn-systemd_*.deb
+```
+
+**Fedora / Red Hat:**
+```
+$ make rpm
+$ dnf install dist/x86_64/aws-vpn-systemd-*.rpm
+```
+
+Each target compiles a patched OpenVPN binary from [AWS's GPL source
+release][aws-source] and packages it alongside the SystemD units and helper
+scripts. The patched build is required because AWS Client VPN uses the OpenVPN
+management interface to carry SAML assertions, which can be up to 128 KB —
+far larger than stock OpenVPN's 128-byte limit.
 
 [aws-source]: https://amazon-source-code-downloads.s3.amazonaws.com/aws/clientvpn/openvpn-2.6.12-aws-1.tar.gz
 

@@ -37,13 +37,14 @@ build() {
 }
 
 package() {
+  local _src="$startdir/../../src"
   install -Dm755 "$srcdir/openvpn-2.7.4/src/openvpn/openvpn" "$pkgdir/usr/local/bin/acvc-openvpn"
-  install -Dm644 "$srcdir/aws-vpn" "$pkgdir/usr/local/bin/aws-vpn"
-  install -Dm755 "$srcdir/vpn-dns-up" "$pkgdir/usr/local/bin/vpn-dns-up"
-  install -Dm755 "$srcdir/vpn-dns-down" "$pkgdir/usr/local/bin/vpn-dns-down"
-  install -Dm644 "$srcdir/00-openvpn-resolved.rules" "$pkgdir/etc/polkit-1/rules.d/00-openvpn-resolved.rules"
-  install -Dm644 "$srcdir/system_aws-vpn@.service" "$pkgdir/usr/local/lib/systemd/system/aws-vpn@.service"
-  install -Dm644 "$srcdir/user_aws-vpn@.service" "$pkgdir/usr/local/lib/systemd/user/aws-vpn@.service"
-  install -Dm755 "$srcdir/aws-vpn-sleep" "$pkgdir/usr/lib/systemd/system-sleep/aws-vpn"
-  install -Dm644 "$srcdir/connected.html" "$pkgdir/usr/local/share/aws-vpn-systemd/connected.html"
+  install -Dm644 "$_src/aws-vpn" "$pkgdir/usr/local/bin/aws-vpn"
+  install -Dm755 "$_src/vpn-dns-up" "$pkgdir/usr/local/bin/vpn-dns-up"
+  install -Dm755 "$_src/vpn-dns-down" "$pkgdir/usr/local/bin/vpn-dns-down"
+  install -Dm644 "$_src/00-openvpn-resolved.rules" "$pkgdir/etc/polkit-1/rules.d/00-openvpn-resolved.rules"
+  install -Dm644 "$_src/system_aws-vpn@.service" "$pkgdir/usr/local/lib/systemd/system/aws-vpn@.service"
+  install -Dm644 "$_src/user_aws-vpn@.service" "$pkgdir/usr/local/lib/systemd/user/aws-vpn@.service"
+  install -Dm755 "$_src/aws-vpn-sleep" "$pkgdir/usr/lib/systemd/system-sleep/aws-vpn"
+  install -Dm644 "$_src/connected.html" "$pkgdir/usr/local/share/aws-vpn-systemd/connected.html"
 }

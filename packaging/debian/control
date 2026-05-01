@@ -1,0 +1,18 @@
+Source: aws-vpn-systemd
+Section: net
+Priority: optional
+Maintainer: Nick Telford <nick.telford@gmail.com>
+Build-Depends: debhelper-compat (= 13), autoconf, automake, libtool, pkg-config, libssl-dev, wget
+Standards-Version: 4.6.2
+Homepage: https://github.com/nicktelford/aws-vpn-systemd
+Rules-Requires-Root: no
+
+Package: aws-vpn-systemd
+Architecture: amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}, systemd, polkitd | policykit-1
+Recommends: socat
+Suggests: nmap, openbsd-netcat
+Description: systemd services for managing AWS Client VPN without the GUI
+ Provides systemd services and a patched OpenVPN binary (acvc-openvpn)
+ for managing AWS Client VPN connections that use SAML authentication,
+ without requiring the official AWS VPN client.
