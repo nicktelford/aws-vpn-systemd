@@ -7,11 +7,7 @@ SystemD, instead of the Amazon GUI._
 
 * Linux with SystemD
 * BASH 4+
-* One of the following network tools:
-  - `socat` (preferred)
-  - Nmap `ncat`
-  - OpenBSD `nc`/`netcat`
-  - Note: GNU Netcat and `netcat-traditional` are _NOT_ supported.
+* `socat`
 * `grep`, `sed`, `awk` and other basic utilities
 
 ## Installation
@@ -37,13 +33,11 @@ $ make rpm
 $ dnf install dist/x86_64/aws-vpn-systemd-*.rpm
 ```
 
-Each target compiles a patched OpenVPN binary from [AWS's GPL source
-release][aws-source] and packages it alongside the SystemD units and helper
-scripts. The patched build is required because AWS Client VPN uses the OpenVPN
-management interface to carry SAML assertions, which can be up to 128 KB —
-far larger than stock OpenVPN's 128-byte limit.
-
-[aws-source]: https://amazon-source-code-downloads.s3.amazonaws.com/aws/clientvpn/openvpn-2.6.12-aws-1.tar.gz
+Each target compiles a patched OpenVPN binary from the latest OpenVPN 2.x
+release and packages it alongside the SystemD units and helper scripts. The
+patched build is required because AWS Client VPN uses the OpenVPN management
+interface to carry SAML assertions, which can be up to 128 KB — far larger
+than stock OpenVPN's 128-byte limit.
 
 ## Assumptions
 
