@@ -18,6 +18,7 @@ RuntimeDirectory=openvpn-client/%i
 WorkingDirectory=/run/openvpn-client/%i
 
 Restart=on-failure
+RestartSec=10s
 ExecStart=/opt/awsvpnclient/Service/Resources/openvpn/acvc-openvpn \
   --suppress-timestamps --nobind --config /etc/openvpn/client/%i.conf \
   --management /run/openvpn-client/%i/mgmt.sock unix \
