@@ -1,6 +1,6 @@
 # Maintainer: Nick Telford <nick.telford@gmail.com>
 pkgname=aws-vpn-systemd
-pkgver=2.0
+pkgver=2.1
 pkgrel=1
 epoch=
 pkgdesc="SystemD services for managing AWS Client VPN without the GUI, including a patched OpenVPN."
@@ -12,30 +12,32 @@ makedepends=('autoconf' 'automake' 'libtool' 'pkg-config')
 optdepends=('socat: preferred network tool (supports all operations)'
             'nmap: provides ncat, a supported alternative to socat'
             'openbsd-netcat: supported alternative to socat')
-sha256sums=('a80ac3825bef9e97d717bc027663169903e25d86d2631e68f1100fcb2a9de702')
-source=('https://amazon-source-code-downloads.s3.amazonaws.com/aws/clientvpn/openvpn-2.6.12-aws-1.tar.gz')
+sha256sums=('18db05f3d5eee3663db1914590044e5f96ff5cd47b6e7846c6a350806c23dbce'
+            'e8fc61637d538c310256a0c7d52db30586995e6a10d4a9798ba43b9b20c9bfea')
+source=('https://build.openvpn.net/downloads/releases/openvpn-2.7.4.tar.gz'
+        'openvpn-2.7.4-aws.patch')
 validpgpkeys=()
 
 prepare() {
-  cd "$srcdir/openvpn"
+  cd "$srcdir/openvpn-2.7.4"
+  patch -p1 < "$srcdir/openvpn-2.7.4-aws.patch"
   autoreconf -fi
 }
 
 build() {
-  cd "$srcdir/openvpn"
+  cd "$srcdir/openvpn-2.7.4"
   ./configure \
     --disable-lzo \
     --disable-lz4 \
     --disable-plugins \
     --disable-pkcs11 \
     --disable-systemd \
-    --disable-dco \
     --with-crypto-library=openssl
   make
 }
 
 package() {
-  install -Dm755 "$srcdir/openvpn/src/openvpn/openvpn" "$pkgdir/usr/local/bin/acvc-openvpn"
+  install -Dm755 "$srcdir/openvpn-2.7.4/src/openvpn/openvpn" "$pkgdir/usr/local/bin/acvc-openvpn"
   install -Dm644 "$srcdir/aws-vpn" "$pkgdir/usr/local/bin/aws-vpn"
   install -Dm755 "$srcdir/vpn-dns-up" "$pkgdir/usr/local/bin/vpn-dns-up"
   install -Dm755 "$srcdir/vpn-dns-down" "$pkgdir/usr/local/bin/vpn-dns-down"

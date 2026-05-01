@@ -5,6 +5,8 @@
 .PKGINFO
 pkg/
 src/openvpn/
+src/openvpn-*/
 src/openssl/
 src/openvpn-*.tar.gz
+src/openvpn-*.patch
 openvpn-*.tar.gz
