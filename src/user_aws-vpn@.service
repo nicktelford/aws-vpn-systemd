@@ -1,23 +1,22 @@
 [Unit]
 Description=AWS Client VPN for %I
 Documentation=man:openvpn(8)
-Documentation=https://community.openvpn.net/openvpn/wiki/Openvpn24ManPage
-Documentation=https://community.openvpn.net/openvpn/wiki/HOWTO
+Documentation=https://openvpn.net/community-resources/reference-manual-for-openvpn-2-6/
 Documentation=https://github.com/nicktelford/aws-vpn-systemd
 
 [Service]
 Type=notify
 NotifyAccess=all
-KillMode=process
 
 Restart=on-failure
 RestartSec=2s
+RestartMaxDelaySec=60s
 
-WorkingDirectory=/tmp
-
-ExecStart=bash /usr/local/bin/aws-vpn %i
+TimeoutStartSec=300
+EnvironmentFile=-/etc/default/aws-vpn-systemd
+ExecStart=/usr/bin/aws-vpn %i
 
 DevicePolicy=closed
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

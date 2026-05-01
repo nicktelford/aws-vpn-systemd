@@ -2,9 +2,9 @@
 Description=AWS Client VPN for %I
 After=syslog.target network-online.target
 Wants=network-online.target
+ConditionPathExists=/etc/openvpn/client/%i.conf
 Documentation=man:openvpn(8)
-Documentation=https://community.openvpn.net/openvpn/wiki/Openvpn24ManPage
-Documentation=https://community.openvpn.net/openvpn/wiki/HOWTO
+Documentation=https://openvpn.net/community-resources/reference-manual-for-openvpn-2-6/
 Documentation=https://github.com/nicktelford/aws-vpn-systemd
 
 [Service]
@@ -19,14 +19,15 @@ WorkingDirectory=/run/openvpn-client/%i
 
 Restart=on-failure
 RestartSec=10s
-ExecStart=/usr/local/bin/acvc-openvpn \
+RestartMaxDelaySec=60s
+ExecStart=/usr/bin/acvc-openvpn \
   --suppress-timestamps --nobind --config /etc/openvpn/client/%i.conf \
   --management /run/openvpn-client/%i/mgmt.sock unix \
   --management-client-group wheel \
   --management-hold --management-query-remote --management-query-passwords \
   --script-security 2 \
-  --up /usr/local/bin/vpn-dns-up \
-  --down /usr/local/bin/vpn-dns-down
+  --up /usr/lib/aws-vpn-systemd/dns-up \
+  --down /usr/lib/aws-vpn-systemd/dns-down
 
 RestrictNamespaces=yes
 PrivateTmp=yes
