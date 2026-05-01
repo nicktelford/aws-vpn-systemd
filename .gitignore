@@ -7,3 +7,4 @@ pkg/
 src/openvpn/
 src/openssl/
 src/openvpn-*.tar.gz
+openvpn-*.tar.gz
