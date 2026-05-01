@@ -51,8 +51,7 @@ auth() {
   local conf="$3"
   local timeout="${4:-30}"
 
-  # Derive a per-instance port so concurrent instances don't collide.
-  local local_port=$(( 35001 + ($(printf '%s' "$VPN_INSTANCE" | cksum | cut -d' ' -f1) % 1000) ))
+  local local_port=35001
 
   local probe_out
   probe_out=$("$VPN_CMD" --remote "$addr" "$port" \
