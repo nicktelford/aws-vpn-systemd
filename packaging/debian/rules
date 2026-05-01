@@ -27,28 +27,26 @@ override_dh_auto_build:
 
 override_dh_auto_install:
 	install -Dm755 $(OPENVPN_BUILD)/src/openvpn/openvpn \
-		$(CURDIR)/debian/aws-vpn-systemd/usr/local/bin/acvc-openvpn
-	install -Dm644 $(CURDIR)/src/aws-vpn \
-		$(CURDIR)/debian/aws-vpn-systemd/usr/local/bin/aws-vpn
-	install -Dm755 $(CURDIR)/src/vpn-dns-up \
-		$(CURDIR)/debian/aws-vpn-systemd/usr/local/bin/vpn-dns-up
-	install -Dm755 $(CURDIR)/src/vpn-dns-down \
-		$(CURDIR)/debian/aws-vpn-systemd/usr/local/bin/vpn-dns-down
+		$(CURDIR)/debian/aws-vpn-systemd/usr/bin/acvc-openvpn
+	install -Dm755 $(CURDIR)/src/aws-vpn \
+		$(CURDIR)/debian/aws-vpn-systemd/usr/bin/aws-vpn
+	install -Dm755 $(CURDIR)/src/dns-up \
+		$(CURDIR)/debian/aws-vpn-systemd/usr/lib/aws-vpn-systemd/dns-up
+	install -Dm755 $(CURDIR)/src/dns-down \
+		$(CURDIR)/debian/aws-vpn-systemd/usr/lib/aws-vpn-systemd/dns-down
 	install -Dm644 $(CURDIR)/src/00-openvpn-resolved.rules \
-		$(CURDIR)/debian/aws-vpn-systemd/etc/polkit-1/rules.d/00-openvpn-resolved.rules
-	install -dm755 $(CURDIR)/debian/aws-vpn-systemd/usr/local/lib/systemd/system
+		$(CURDIR)/debian/aws-vpn-systemd/usr/share/polkit-1/rules.d/00-openvpn-resolved.rules
+	install -dm755 $(CURDIR)/debian/aws-vpn-systemd/usr/lib/systemd/system
 	sed 's/wheel/sudo/g' $(CURDIR)/src/system_aws-vpn@.service \
 		| install -m644 /dev/stdin \
-		$(CURDIR)/debian/aws-vpn-systemd/usr/local/lib/systemd/system/aws-vpn@.service
+		$(CURDIR)/debian/aws-vpn-systemd/usr/lib/systemd/system/aws-vpn@.service
 	install -Dm644 $(CURDIR)/src/user_aws-vpn@.service \
-		$(CURDIR)/debian/aws-vpn-systemd/usr/local/lib/systemd/user/aws-vpn@.service
+		$(CURDIR)/debian/aws-vpn-systemd/usr/lib/systemd/user/aws-vpn@.service
 	install -Dm755 $(CURDIR)/src/aws-vpn-sleep \
 		$(CURDIR)/debian/aws-vpn-systemd/usr/lib/systemd/system-sleep/aws-vpn
 	install -Dm644 $(CURDIR)/src/connected.html \
-		$(CURDIR)/debian/aws-vpn-systemd/usr/local/share/aws-vpn-systemd/connected.html
+		$(CURDIR)/debian/aws-vpn-systemd/usr/share/aws-vpn-systemd/connected.html
 	install -dm755 $(CURDIR)/debian/aws-vpn-systemd/etc/openvpn/client
-
-override_dh_usrlocal:
 
 override_dh_auto_clean:
 	rm -rf $(BUILD_DIR)

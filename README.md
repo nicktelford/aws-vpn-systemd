@@ -40,7 +40,7 @@ $ sudo usermod -aG sudo $USER
 
 Place the configuration file for your VPN in `/etc/openvpn/client/<name>.conf`,
 where `<name>` is any identifier you choose. Files should be owned by
-`openvpn:wheel` (or `openvpn:sudo` on Ubuntu/Debian). Multiple VPNs may be
+`root:wheel` (or `root:sudo` on Ubuntu/Debian), mode `640`. Multiple VPNs may be
 configured by repeating these steps for each one.
 
 If your VPN configuration file includes the `auth-federate` directive, remove

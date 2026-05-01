@@ -52,23 +52,23 @@ cd ../openvpn-%{openvpn_version}
 
 %install
 install -Dm755 ../openvpn-%{openvpn_version}/src/openvpn/openvpn \
-    %{buildroot}/usr/local/bin/acvc-openvpn
-install -Dm644 src/aws-vpn \
-    %{buildroot}/usr/local/bin/aws-vpn
-install -Dm755 src/vpn-dns-up \
-    %{buildroot}/usr/local/bin/vpn-dns-up
-install -Dm755 src/vpn-dns-down \
-    %{buildroot}/usr/local/bin/vpn-dns-down
+    %{buildroot}/usr/bin/acvc-openvpn
+install -Dm755 src/aws-vpn \
+    %{buildroot}/usr/bin/aws-vpn
+install -Dm755 src/dns-up \
+    %{buildroot}/usr/lib/%{name}/dns-up
+install -Dm755 src/dns-down \
+    %{buildroot}/usr/lib/%{name}/dns-down
 install -Dm644 src/00-openvpn-resolved.rules \
-    %{buildroot}/etc/polkit-1/rules.d/00-openvpn-resolved.rules
+    %{buildroot}/usr/share/polkit-1/rules.d/00-openvpn-resolved.rules
 install -Dm644 src/system_aws-vpn@.service \
-    %{buildroot}/usr/local/lib/systemd/system/aws-vpn@.service
+    %{buildroot}/usr/lib/systemd/system/aws-vpn@.service
 install -Dm644 src/user_aws-vpn@.service \
-    %{buildroot}/usr/local/lib/systemd/user/aws-vpn@.service
+    %{buildroot}/usr/lib/systemd/user/aws-vpn@.service
 install -Dm755 src/aws-vpn-sleep \
     %{buildroot}/usr/lib/systemd/system-sleep/aws-vpn
 install -Dm644 src/connected.html \
-    %{buildroot}/usr/local/share/%{name}/connected.html
+    %{buildroot}/usr/share/%{name}/connected.html
 install -Dm644 %{SOURCE2} \
     %{buildroot}%{_sysusersdir}/%{name}.conf
 install -dm755 %{buildroot}/etc/openvpn/client
@@ -77,17 +77,17 @@ install -dm755 %{buildroot}/etc/openvpn/client
 %sysusers_create_compat %{SOURCE2}
 
 %files
-/usr/local/bin/acvc-openvpn
-/usr/local/bin/aws-vpn
-/usr/local/bin/vpn-dns-up
-/usr/local/bin/vpn-dns-down
-/etc/polkit-1/rules.d/00-openvpn-resolved.rules
-/usr/local/lib/systemd/system/aws-vpn@.service
-/usr/local/lib/systemd/user/aws-vpn@.service
+/usr/bin/acvc-openvpn
+/usr/bin/aws-vpn
+/usr/lib/%{name}/dns-up
+/usr/lib/%{name}/dns-down
+/usr/share/polkit-1/rules.d/00-openvpn-resolved.rules
+/usr/lib/systemd/system/aws-vpn@.service
+/usr/lib/systemd/user/aws-vpn@.service
 /usr/lib/systemd/system-sleep/aws-vpn
 %dir /etc/openvpn/client
-%dir /usr/local/share/%{name}
-/usr/local/share/%{name}/connected.html
+%dir /usr/share/%{name}
+/usr/share/%{name}/connected.html
 %{_sysusersdir}/%{name}.conf
 
 %changelog

@@ -2,13 +2,13 @@
 pkgname=aws-vpn-systemd
 pkgver=2.1
 pkgrel=1
-epoch=
 pkgdesc="SystemD services for managing AWS Client VPN without the GUI, including a patched OpenVPN."
 arch=('x86_64')
 url="https://github.com/nicktelford/aws-vpn-systemd"
 license=('GPL-2.0-only')
 depends=('systemd' 'polkit' 'openssl' 'socat')
 makedepends=('autoconf' 'automake' 'libtool' 'pkg-config')
+options=('!debug')
 sha256sums=('18db05f3d5eee3663db1914590044e5f96ff5cd47b6e7846c6a350806c23dbce'
             'e8fc61637d538c310256a0c7d52db30586995e6a10d4a9798ba43b9b20c9bfea')
 source=('https://build.openvpn.net/downloads/releases/openvpn-2.7.4.tar.gz'
@@ -35,15 +35,15 @@ build() {
 
 package() {
   local _src="$startdir/../../src"
-  install -Dm755 "$srcdir/openvpn-2.7.4/src/openvpn/openvpn" "$pkgdir/usr/local/bin/acvc-openvpn"
-  install -Dm644 "$_src/aws-vpn" "$pkgdir/usr/local/bin/aws-vpn"
-  install -Dm755 "$_src/vpn-dns-up" "$pkgdir/usr/local/bin/vpn-dns-up"
-  install -Dm755 "$_src/vpn-dns-down" "$pkgdir/usr/local/bin/vpn-dns-down"
-  install -Dm644 "$_src/00-openvpn-resolved.rules" "$pkgdir/etc/polkit-1/rules.d/00-openvpn-resolved.rules"
-  install -Dm644 "$_src/system_aws-vpn@.service" "$pkgdir/usr/local/lib/systemd/system/aws-vpn@.service"
-  install -Dm644 "$_src/user_aws-vpn@.service" "$pkgdir/usr/local/lib/systemd/user/aws-vpn@.service"
+  install -Dm755 "$srcdir/openvpn-2.7.4/src/openvpn/openvpn" "$pkgdir/usr/bin/acvc-openvpn"
+  install -Dm755 "$_src/aws-vpn" "$pkgdir/usr/bin/aws-vpn"
+  install -Dm755 "$_src/dns-up" "$pkgdir/usr/lib/aws-vpn-systemd/dns-up"
+  install -Dm755 "$_src/dns-down" "$pkgdir/usr/lib/aws-vpn-systemd/dns-down"
+  install -Dm644 "$_src/00-openvpn-resolved.rules" "$pkgdir/usr/share/polkit-1/rules.d/00-openvpn-resolved.rules"
+  install -Dm644 "$_src/system_aws-vpn@.service" "$pkgdir/usr/lib/systemd/system/aws-vpn@.service"
+  install -Dm644 "$_src/user_aws-vpn@.service" "$pkgdir/usr/lib/systemd/user/aws-vpn@.service"
   install -Dm755 "$_src/aws-vpn-sleep" "$pkgdir/usr/lib/systemd/system-sleep/aws-vpn"
-  install -Dm644 "$_src/connected.html" "$pkgdir/usr/local/share/aws-vpn-systemd/connected.html"
+  install -Dm644 "$_src/connected.html" "$pkgdir/usr/share/aws-vpn-systemd/connected.html"
   install -Dm644 "$_src/aws-vpn-systemd.sysusers" "$pkgdir/usr/lib/sysusers.d/aws-vpn-systemd.conf"
   install -dm755 "$pkgdir/etc/openvpn/client"
 }
