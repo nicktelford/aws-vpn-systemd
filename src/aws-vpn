@@ -79,11 +79,12 @@ auth() {
   fi
 
   # start a "web server" that will receive the saml response from the idp
+  # shellcheck disable=SC2016
   exec 3< <({ printf 'HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n'; cat "$HTML_BODY"; } | timeout "$timeout" bash -c 'tcp_listen "$1"' -- "$local_port")
   local pid=$!
 
   # create a trap that will close the "web server" process as well if this script is aborted by CTRL+C
-  trap "kill $pid 2>/dev/null" EXIT
+  trap 'kill "$pid" 2>/dev/null' EXIT
 
   "$BROWSER_CMD" "$saml_url" >/dev/null 2>&1 &
 
@@ -133,30 +134,37 @@ NC_OUT=${COPROC[0]}
 NC_IN=${COPROC[1]}
 MGMT_PID=${COPROC_PID}
 
-trap "echo 'Disconnecting VPN...' && echo 'signal SIGHUP' >&$NC_IN && sleep 1 && kill -- -$MGMT_PID 2>/dev/null; wait " EXIT
+disconnect_vpn() {
+  echo 'Disconnecting VPN...'
+  echo 'signal SIGHUP' >&"$NC_IN"
+  sleep 1
+  kill -- -"$MGMT_PID" 2>/dev/null
+  wait
+}
+trap disconnect_vpn EXIT
 
-echo "state on" >&$NC_IN
+echo "state on" >&"$NC_IN"
 
-while IFS=: read -u $NC_OUT -r signal data
+while IFS=: read -u "$NC_OUT" -r signal data
 do
   case $signal in
     ">HOLD")
-      echo "hold release" >&$NC_IN
+      echo "hold release" >&"$NC_IN"
       ;;
     ">REMOTE")
       if [[ "$data" == "$VPN_HOSTNAME,$VPN_PORT,udp"* ]]; then
-        echo "remote MOD $VPN_SRV $VPN_PORT" >&$NC_IN
+        echo "remote MOD $VPN_SRV $VPN_PORT" >&"$NC_IN"
       else
         echo "WARN: Skipping attempt to connect to unrecognised endpoint: $data" >&2
-        echo "remote SKIP" >&$NC_IN
+        echo "remote SKIP" >&"$NC_IN"
       fi
       ;;
     ">PASSWORD")
       if [[ "$data" == "Need 'Auth' username/password"* ]]; then
         echo "Opening browser and waiting for the SAML response..."
         if pass=$(auth "$VPN_SRV" "$VPN_PORT" "$VPN_CONF" "$SAML_RESPONSE_TIMEOUT"); then
-          echo "username \"Auth\" \"N/A\"" >&$NC_IN
-          echo "password \"Auth\" \"$pass\"" >&$NC_IN
+          echo "username \"Auth\" \"N/A\"" >&"$NC_IN"
+          echo "password \"Auth\" \"$pass\"" >&"$NC_IN"
         fi
       else
         echo "ERROR: Unable to supply requested authentication: $data" >&2
@@ -202,7 +210,7 @@ do
           echo "OpenVPN client shutting down..."
           systemd-notify "STOPPING=1" "STATUS=OpenVPN client shutting down..."
           trap - EXIT
-          kill -- -$MGMT_PID 2>/dev/null
+          kill -- -"$MGMT_PID" 2>/dev/null
           wait
           exit 1
           ;;
@@ -222,4 +230,4 @@ done
 
 systemd-notify "STOPPING=1"
 trap - EXIT
-kill -- -$MGMT_PID 2>/dev/null
+kill -- -"$MGMT_PID" 2>/dev/null
