@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Push VPN-provided DNS configuration into the system resolver.
+# Invoked by OpenVPN as the --up script.
+# Environment variables set by OpenVPN: dev, foreign_option_<n>.
+
+set -euo pipefail
+
+link="${dev:?dev not set by OpenVPN}"
+
+nameservers=()
+search_or_route=()
+
+n=1
+while :; do
+    varname="foreign_option_$n"
+    raw="${!varname-}"
+    [[ -z $raw ]] && break
+    n=$((n + 1))
+
+    read -r tag key value rest <<<"$raw"
+    [[ $tag == dhcp-option && -z $rest ]] || continue
+
+    case $key in
+        DNS)          nameservers+=("$value") ;;
+        DOMAIN)       search_or_route+=("$value") ;;
+        DOMAIN-ROUTE) search_or_route+=("~$value") ;;
+    esac
+done
+
+(( ${#nameservers[@]}     )) && resolvectl dns    "$link" "${nameservers[@]}"
+(( ${#search_or_route[@]} )) && resolvectl domain "$link" "${search_or_route[@]}"
+
+exit 0

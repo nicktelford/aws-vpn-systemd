@@ -17,8 +17,7 @@ instead of the Amazon GUI._
 
 Note: if you use a patched OpenVPN client, you will either need to install it
 at `/opt/awsvpnclient/Service/Resources/openvpn/acvc-openvpn` or replace the
-paths in the source files in this repo. You will also need to supply an
-equivalent `configure-dns` script to the one shipped in the Amazon VPN client.
+paths in the source files in this repo.
 
 ## Assumptions
 
@@ -95,6 +94,7 @@ To manually install, copy the included files to the correct locations:
 * `sudo cp aws-vpn /usr/local/bin/aws-vpn`
 * `sudo cp 00-openvpn-resolved.rules /etc/polkit-1/rules.d/`
 * `sudo install -m755 aws-vpn-sleep /usr/lib/systemd/system-sleep/aws-vpn`
+* `sudo install -m755 vpn-dns-up vpn-dns-down /usr/local/bin/`
 
 Note: if you are not using the AWS VPN client, or have it installed in a
 different location, you may need to edit `system_aws-vpn@.service` to modify

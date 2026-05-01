@@ -1,6 +1,6 @@
 # Maintainer: Nick Telford <nick.telford@gmail.com>
 pkgname=aws-vpn-systemd
-pkgver=1.1
+pkgver=1.2
 pkgrel=1
 epoch=
 pkgdesc="A set of SystemD services for managing the AWS VPN without the GUI."
@@ -17,6 +17,8 @@ validpgpkeys=()
 
 package() {
   install -Dm644 "$srcdir/aws-vpn" "$pkgdir/usr/local/bin/aws-vpn"
+  install -Dm755 "$srcdir/vpn-dns-up" "$pkgdir/usr/local/bin/vpn-dns-up"
+  install -Dm755 "$srcdir/vpn-dns-down" "$pkgdir/usr/local/bin/vpn-dns-down"
   install -Dm644 "$srcdir/00-openvpn-resolved.rules" "$pkgdir/etc/polkit-1/rules.d/00-openvpn-resolved.rules"
   install -Dm644 "$srcdir/system_aws-vpn@.service" "$pkgdir/usr/local/lib/systemd/system/aws-vpn@.service"
   install -Dm644 "$srcdir/user_aws-vpn@.service" "$pkgdir/usr/local/lib/systemd/user/aws-vpn@.service"

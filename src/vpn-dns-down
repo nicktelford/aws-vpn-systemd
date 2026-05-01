@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Revert DNS configuration applied by vpn-dns-up.
+# Invoked by OpenVPN as the --down script.
+# Environment variable set by OpenVPN: dev.
+
+set -euo pipefail
+exec resolvectl revert "${dev:?dev not set by OpenVPN}"
