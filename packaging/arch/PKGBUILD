@@ -7,11 +7,8 @@ pkgdesc="SystemD services for managing AWS Client VPN without the GUI, including
 arch=('x86_64')
 url="https://github.com/nicktelford/aws-vpn-systemd"
 license=('GPL-2.0-only')
-depends=('systemd' 'polkit' 'openssl')
+depends=('systemd' 'polkit' 'openssl' 'socat')
 makedepends=('autoconf' 'automake' 'libtool' 'pkg-config')
-optdepends=('socat: preferred network tool (supports all operations)'
-            'nmap: provides ncat, a supported alternative to socat'
-            'openbsd-netcat: supported alternative to socat')
 sha256sums=('18db05f3d5eee3663db1914590044e5f96ff5cd47b6e7846c6a350806c23dbce'
             'e8fc61637d538c310256a0c7d52db30586995e6a10d4a9798ba43b9b20c9bfea')
 source=('https://build.openvpn.net/downloads/releases/openvpn-2.7.4.tar.gz'

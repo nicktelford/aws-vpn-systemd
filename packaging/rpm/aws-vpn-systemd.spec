@@ -22,9 +22,7 @@ BuildRequires:  libcap-ng-devel
 
 Requires:       systemd
 Requires:       polkit
-Recommends:     socat
-Suggests:       nmap
-Suggests:       openbsd-netcat
+Requires:       socat
 
 %description
 Provides systemd services and a patched OpenVPN binary (acvc-openvpn)

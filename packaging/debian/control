@@ -9,9 +9,7 @@ Rules-Requires-Root: no
 
 Package: aws-vpn-systemd
 Architecture: amd64
-Depends: ${shlibs:Depends}, ${misc:Depends}, systemd, polkitd | policykit-1
-Recommends: socat
-Suggests: nmap, openbsd-netcat
+Depends: ${shlibs:Depends}, ${misc:Depends}, systemd, polkitd | policykit-1, socat
 Description: systemd services for managing AWS Client VPN without the GUI
  Provides systemd services and a patched OpenVPN binary (acvc-openvpn)
  for managing AWS Client VPN connections that use SAML authentication,

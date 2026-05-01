@@ -20,25 +20,9 @@ VPN_HOSTNAME=$(sed -rn 's/remote ([^[:space:]]+) [[:digit:]]+$/\1/p' "$VPN_CONF"
 VPN_PORT=$(sed -rn 's/remote [^[:space:]]+ ([[:digit:]]+)$/\1/p' "$VPN_CONF")
 VPN_MGMT_SOCKET="/run/openvpn-client/$VPN_INSTANCE/mgmt.sock"
 
-detect_tools() {
-  if command -v socat >/dev/null 2>&1; then
-    tcp_listen()   { socat - "TCP-LISTEN:$1,reuseaddr"; }
-    unix_connect() { socat - "UNIX-CONNECT:$1"; }
-  elif command -v ncat >/dev/null 2>&1; then
-    tcp_listen()   { ncat -l "$1"; }
-    unix_connect() { ncat -U "$1"; }
-  elif command -v nc >/dev/null 2>&1 && nc -h 2>&1 | grep -qi 'openbsd'; then
-    tcp_listen()   { nc -l "$1"; }
-    unix_connect() { nc -U "$1"; }
-  elif command -v netcat >/dev/null 2>&1 && netcat -h 2>&1 | grep -qi 'openbsd'; then
-    tcp_listen()   { netcat -l "$1"; }
-    unix_connect() { netcat -U "$1"; }
-  else
-    echo "ERROR: No supported network tool found. Install one of: socat, nmap (for ncat), or openbsd-netcat." >&2
-    exit 1
-  fi
-  export -f tcp_listen unix_connect
-}
+tcp_listen()   { socat - "TCP-LISTEN:$1,reuseaddr"; }
+unix_connect() { socat - "UNIX-CONNECT:$1"; }
+export -f tcp_listen unix_connect
 
 resolve_host() {
   host="$1"
@@ -104,8 +88,6 @@ auth() {
 
   return 0
 }
-
-detect_tools
 
 if [ ! -S "$VPN_MGMT_SOCKET" ]; then
   echo -e "ERROR: No OpenVPN client service is running for $VPN_INSTANCE. Start one with:\n  $ systemctl start aws-vpn@$VPN_INSTANCE.service" >&2
