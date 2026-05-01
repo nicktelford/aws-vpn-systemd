@@ -1,0 +1,72 @@
+name: Build and Publish Packages
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-deb:
+    name: Build Debian package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb
+          path: dist/
+
+  build-rpm:
+    name: Build RPM packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make rpm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rpm
+          path: dist/
+
+  build-pkg:
+    name: Build Arch Linux package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make pkg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pkg
+          path: dist/
+
+  publish:
+    name: Publish packages
+    needs: [build-deb, build-rpm, build-pkg]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: version
+        run: |
+          echo "value=$(grep -m1 '^VERSION[[:space:]]*:=' Makefile | cut -d= -f2 | tr -d ' ')" \
+            >> "$GITHUB_OUTPUT"
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: packages
+          merge-multiple: true
+
+      - name: Create or update release
+        run: |
+          TAG="v${{ steps.version.outputs.value }}"
+          FILES=$(find packages -type f | sort)
+          if gh release view "$TAG" &>/dev/null; then
+            gh release upload "$TAG" $FILES --clobber
+          else
+            gh release create "$TAG" $FILES \
+              --title "$TAG" \
+              --latest
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
