@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Revert DNS configuration applied by vpn-dns-up.
+# Revert DNS configuration applied by dns-up.
 # Invoked by OpenVPN as the --down script.
 # Environment variable set by OpenVPN: dev.
 
