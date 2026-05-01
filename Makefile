@@ -4,7 +4,9 @@ OPENVPN_VER := 2.7.4
 OPENVPN_URL := https://build.openvpn.net/downloads/releases/openvpn-$(OPENVPN_VER).tar.gz
 DIST_DIR    := $(CURDIR)/dist
 
-.PHONY: pkg deb rpm clean
+.PHONY: all pkg deb rpm clean
+
+all: pkg deb rpm
 
 $(DIST_DIR):
 	mkdir -p $@
@@ -58,3 +60,4 @@ rpm: | $(DIST_DIR)
 
 clean:
 	$(RM) -r $(DIST_DIR)
+	$(RM) -r packaging/arch/src packaging/arch/pkg
