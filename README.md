@@ -41,8 +41,6 @@ than stock OpenVPN's 128-byte limit.
 
 ## Assumptions
 
-* The `openvpn` user exists, and the VPN should run as this user.
-* The `network` group exists, and members of this group may manage VPN connections.
 * AWS VPN configuration files are stored in `/etc/openvpn/client/<instance>.conf`,
   where `<instance>` is the hostname of your VPN.
 * DNS is managed by `systemd-resolved`.
@@ -51,6 +49,12 @@ than stock OpenVPN's 128-byte limit.
 
 Replace `<instance>` with the hostname of your VPN. Multiple VPNs may be
 configured by repeating these steps for each one.
+
+Add yourself to the `network` group, then log out and back in for it to take effect:
+
+```
+$ sudo usermod -aG network $USER
+```
 
 Place the configuration file for your VPN in `/etc/openvpn/client/<instance>.conf`.
 If this directory doesn't exist, create it. Files should be owned by

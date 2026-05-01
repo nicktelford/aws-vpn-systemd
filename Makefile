@@ -43,11 +43,12 @@ rpm: | $(DIST_DIR)
 		-v "$(DIST_DIR):/dist" \
 		fedora:42 \
 		bash -c 'dnf install -y --setopt=install_weak_deps=False \
-				rpm-build autoconf automake libtool pkgconfig openssl-devel libnl3-devel libcap-ng-devel wget \
+				rpm-build systemd-rpm-macros autoconf automake libtool pkgconfig openssl-devel libnl3-devel libcap-ng-devel wget \
 			&& tar czf /tmp/$(NAME)-$(VERSION).tar.gz \
 				--transform "s|^\./|$(NAME)-$(VERSION)/|" \
 				--exclude=".git" --exclude="./dist" \
 				-C /src . \
+			&& cp /src/src/$(NAME).sysusers /tmp/ \
 			&& wget -q -O /tmp/openvpn-$(OPENVPN_VER).tar.gz $(OPENVPN_URL) \
 			&& rpmbuild -ba /src/packaging/rpm/$(NAME).spec \
 				--define "_sourcedir /tmp" \

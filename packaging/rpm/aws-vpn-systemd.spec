@@ -11,7 +11,9 @@ URL:            https://github.com/nicktelford/aws-vpn-systemd
 # Create with: git archive --prefix=aws-vpn-systemd-%%{version}/ HEAD -o aws-vpn-systemd-%%{version}.tar.gz
 Source0:        %{name}-%{version}.tar.gz
 Source1:        https://build.openvpn.net/downloads/releases/openvpn-%{openvpn_version}.tar.gz
+Source2:        %{name}.sysusers
 
+BuildRequires:  systemd-rpm-macros
 BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  libtool
@@ -23,6 +25,7 @@ BuildRequires:  libcap-ng-devel
 Requires:       systemd
 Requires:       polkit
 Requires:       socat
+%{?sysusers_requires_compat}
 
 %description
 Provides systemd services and a patched OpenVPN binary (acvc-openvpn)
@@ -66,6 +69,11 @@ install -Dm755 src/aws-vpn-sleep \
     %{buildroot}/usr/lib/systemd/system-sleep/aws-vpn
 install -Dm644 src/connected.html \
     %{buildroot}/usr/local/share/%{name}/connected.html
+install -Dm644 %{SOURCE2} \
+    %{buildroot}%{_sysusersdir}/%{name}.conf
+
+%pre
+%sysusers_create_compat %{SOURCE2}
 
 %files
 /usr/local/bin/acvc-openvpn
@@ -78,6 +86,7 @@ install -Dm644 src/connected.html \
 /usr/lib/systemd/system-sleep/aws-vpn
 %dir /usr/local/share/%{name}
 /usr/local/share/%{name}/connected.html
+%{_sysusersdir}/%{name}.conf
 
 %changelog
 * Thu May 01 2026 Nick Telford <nick.telford@gmail.com> - 2.1-1

@@ -44,4 +44,5 @@ package() {
   install -Dm644 "$_src/user_aws-vpn@.service" "$pkgdir/usr/local/lib/systemd/user/aws-vpn@.service"
   install -Dm755 "$_src/aws-vpn-sleep" "$pkgdir/usr/lib/systemd/system-sleep/aws-vpn"
   install -Dm644 "$_src/connected.html" "$pkgdir/usr/local/share/aws-vpn-systemd/connected.html"
+  install -Dm644 "$_src/aws-vpn-systemd.sysusers" "$pkgdir/usr/lib/sysusers.d/aws-vpn-systemd.conf"
 }
