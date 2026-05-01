@@ -58,12 +58,24 @@ auth() {
   out=$("$VPN_CMD" --remote "$addr" "$port" --config "$conf" \
     --auth-retry none \
     --auth-user-pass <( printf "%s\n%s\n" "N/A" "ACS::$local_port" ) \
-    | grep "AUTH_FAILED,CRV1"
+    2>&1 | grep "AUTH_FAILED,CRV1"
   )
+
+  if [[ -z "$out" ]]; then
+    echo "ERROR: No SAML challenge received from VPN server. Check system unit logs." >&2
+    return 1
+  fi
 
   # get SID from the reply
   local sid
   sid=$(echo "$out" | sed -rn 's/.*AUTH_FAILED,CRV1:R:([^:]+):.*/\1/p')
+
+  local saml_url
+  saml_url=$(echo "$out" | grep -Eo 'https://[^[:space:]]+')
+  if [[ -z "$saml_url" || -z "$sid" ]]; then
+    echo "ERROR: Could not parse SAML challenge response: $out" >&2
+    return 1
+  fi
 
   # start a "web server" that will receive the saml response from the idp
   exec 3< <({ printf 'HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n'; cat "$HTML_BODY"; } | timeout "$timeout" bash -c 'tcp_listen "$1"' -- "$local_port")
@@ -72,7 +84,7 @@ auth() {
   # create a trap that will close the "web server" process as well if this script is aborted by CTRL+C
   trap "kill $pid 2>/dev/null" EXIT
 
-  "$BROWSER_CMD" "$(echo "$out" | grep -Eo 'https://[^[:space:]]+')" >/dev/null 2>&1 &
+  "$BROWSER_CMD" "$saml_url" >/dev/null 2>&1 &
 
   local response
   response=$(cat <&3)
