@@ -55,10 +55,15 @@ auth() {
   local local_port=$(( 35001 + ($(printf '%s' "$VPN_INSTANCE" | cksum | cut -d' ' -f1) % 1000) ))
 
   local out
-  out=$("$VPN_CMD" --remote "$addr" "$port" --config "$conf" \
+  # Strip log/log-append directives so probe output goes to stdout rather than
+  # a log file that the config might redirect to.  tee to stderr so the full
+  # probe output appears in the journal even when grep finds nothing.
+  out=$("$VPN_CMD" --remote "$addr" "$port" \
+    --config <(grep -Ev '^\s*(log|log-append)\s' "$conf") \
+    --verb 3 \
     --auth-retry none \
     --auth-user-pass <( printf "%s\n%s\n" "N/A" "ACS::$local_port" ) \
-    2>&1 | grep "AUTH_FAILED,CRV1"
+    2>&1 | tee /dev/stderr | grep "AUTH_FAILED,CRV1"
   )
 
   if [[ -z "$out" ]]; then
