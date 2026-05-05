@@ -1,5 +1,5 @@
 NAME        := aws-vpn-systemd
-VERSION     := 2.1
+VERSION     := 2.1.1
 OPENVPN_VER := 2.7.4
 OPENVPN_URL := https://build.openvpn.net/downloads/releases/openvpn-$(OPENVPN_VER).tar.gz
 DIST_DIR    := $(CURDIR)/dist

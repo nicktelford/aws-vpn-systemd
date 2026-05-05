@@ -43,10 +43,6 @@ where `<name>` is any identifier you choose. Files should be owned by
 `root:wheel` (or `root:sudo` on Ubuntu/Debian), mode `640`. Multiple VPNs may be
 configured by repeating these steps for each one.
 
-If your VPN configuration file includes the `auth-federate` directive, remove
-it — this is not understood by OpenVPN and is merely used as a marker to
-indicate an Amazon VPN configuration.
-
 Enable and start the _system_ unit:
 
 ```

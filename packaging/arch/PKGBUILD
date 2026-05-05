@@ -1,6 +1,6 @@
 # Maintainer: Nick Telford <nick.telford@gmail.com>
 pkgname=aws-vpn-systemd
-pkgver=2.1
+pkgver=2.1.1
 pkgrel=1
 pkgdesc="SystemD services for managing AWS Client VPN without the GUI, including a patched OpenVPN."
 arch=('x86_64')
@@ -10,7 +10,7 @@ depends=('systemd' 'polkit' 'openssl' 'socat')
 makedepends=('autoconf' 'automake' 'libtool' 'pkg-config')
 options=('!debug')
 sha256sums=('18db05f3d5eee3663db1914590044e5f96ff5cd47b6e7846c6a350806c23dbce'
-            'e8fc61637d538c310256a0c7d52db30586995e6a10d4a9798ba43b9b20c9bfea')
+            '4e426ab2e74391b1c85f81f80b15fc456e4190d9febcbf884a58fca19a135b87')
 source=('https://build.openvpn.net/downloads/releases/openvpn-2.7.4.tar.gz'
         'openvpn-2.7.4-aws.patch')
 validpgpkeys=()

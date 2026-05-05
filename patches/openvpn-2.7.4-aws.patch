@@ -106,6 +106,20 @@
          man->connection.out = buffer_list_new();
  
          /*
+--- a/src/openvpn/options.c
++++ b/src/openvpn/options.c
+@@ -8773,6 +8773,11 @@
+         VERIFY_PERMISSION(OPT_P_GENERAL);
+         ssl_set_auth_nocache();
+     }
++    else if (streq(p[0], "auth-federate") && !p[1])
++    {
++        VERIFY_PERMISSION(OPT_P_GENERAL);
++        /* AWS Client VPN marker; accepted and ignored. */
++    }
+     else if (streq(p[0], "auth-token") && p[1] && !p[2])
+     {
+         VERIFY_PERMISSION(OPT_P_ECHO);
 --- a/src/openvpn/ssl.c
 +++ b/src/openvpn/ssl.c
 @@ -1781,7 +1781,7 @@

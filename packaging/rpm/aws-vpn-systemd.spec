@@ -2,7 +2,7 @@
 %global debug_package %{nil}
 
 Name:           aws-vpn-systemd
-Version:        2.1
+Version:        2.1.1
 Release:        1%{?dist}
 Summary:        systemd services for managing AWS Client VPN without the GUI
 License:        GPL-2.0-only
@@ -91,5 +91,8 @@ install -dm755 %{buildroot}/etc/openvpn/client
 %{_sysusersdir}/%{name}.conf
 
 %changelog
+* Mon May 05 2026 Nick Telford <nick.telford@gmail.com> - 2.1.1-1
+- Ignore auth-federate directive in OpenVPN config
+
 * Thu May 01 2026 Nick Telford <nick.telford@gmail.com> - 2.1-1
 - Initial RPM packaging
