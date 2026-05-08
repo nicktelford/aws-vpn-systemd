@@ -12,7 +12,7 @@ Restart=on-failure
 RestartSec=2s
 RestartMaxDelaySec=60s
 
-TimeoutStartSec=300
+TimeoutStartSec=infinity
 EnvironmentFile=-/etc/default/aws-vpn-systemd
 ExecStart=/usr/bin/aws-vpn %i
 

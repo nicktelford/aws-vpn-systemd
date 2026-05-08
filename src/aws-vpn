@@ -16,6 +16,22 @@ fi
 
 VPN_INSTANCE="$1"
 VPN_CONF="/etc/openvpn/client/$VPN_INSTANCE.conf"
+
+wait_for_unlock() {
+  local session active locked
+  session=$(loginctl show-user "$USER" --property=Display --value 2>/dev/null)
+  [ -z "$session" ] && return 0
+
+  systemd-notify "STATUS=Waiting for user session to unlock..."
+  while :; do
+    active=$(loginctl show-session "$session" --property=Active     --value 2>/dev/null)
+    locked=$(loginctl show-session "$session" --property=LockedHint --value 2>/dev/null)
+    [ "$active" = "yes" ] && [ "$locked" = "no" ] && return 0
+    sleep 2
+  done
+}
+
+wait_for_unlock
 VPN_HOSTNAME=$(sed -rn 's/^[[:space:]]*remote[[:space:]]+([^[:space:]]+)[[:space:]]+[[:digit:]]+([[:space:]].*)?$/\1/p' "$VPN_CONF" | head -n1)
 VPN_PORT=$(sed -rn 's/^[[:space:]]*remote[[:space:]]+[^[:space:]]+[[:space:]]+([[:digit:]]+)([[:space:]].*)?$/\1/p' "$VPN_CONF" | head -n1)
 VPN_MGMT_SOCKET="/run/openvpn-client/$VPN_INSTANCE/mgmt.sock"
