@@ -20,11 +20,16 @@ pkg: | $(DIST_DIR)
 			&& useradd -m builder \
 			&& mkdir -p /workspace \
 			&& cp -r /src/. /workspace/ \
+			&& sed -i "s|@VERSION@|$(VERSION)|g; s|@OPENVPN_VER@|$(OPENVPN_VER)|g" /workspace/packaging/arch/PKGBUILD \
 			&& chown -R builder /workspace \
 			&& su builder -c "cd /workspace/packaging/arch && makepkg -d" \
 			&& cp /workspace/packaging/arch/*.pkg.tar.zst /dist/'
 
 deb: | $(DIST_DIR)
+	PREV=$$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true); \
+	ITEMS=$$(git log --no-merges --pretty='format:  * %s' $${PREV:+$$PREV..}HEAD); \
+	printf 'aws-vpn-systemd ($(VERSION)-1) unstable; urgency=low\n\n%s\n\n -- Nick Telford <nick.telford@gmail.com>  %s\n' \
+		"$$ITEMS" "$$(date -R)" > $(DIST_DIR)/changelog.debian
 	docker run --rm \
 		-v "$(CURDIR):/src:ro" \
 		-v "$(DIST_DIR):/dist" \
@@ -34,6 +39,7 @@ deb: | $(DIST_DIR)
 				build-essential ca-certificates dpkg-dev debhelper autoconf automake libtool pkg-config libssl-dev libnl-genl-3-dev libcap-ng-dev wget \
 			&& mkdir -p /workspace/build \
 			&& cp -r /src/. /workspace/build/ \
+			&& cp /dist/changelog.debian /workspace/build/packaging/debian/changelog \
 			&& cd /workspace/build \
 			&& ln -sfn packaging/debian debian \
 			&& dpkg-buildpackage -us -uc -b \
@@ -52,7 +58,9 @@ rpm: | $(DIST_DIR)
 				-C /src . \
 			&& cp /src/src/$(NAME).sysusers /tmp/ \
 			&& wget -q -O /tmp/openvpn-$(OPENVPN_VER).tar.gz $(OPENVPN_URL) \
-			&& rpmbuild -ba /src/packaging/rpm/$(NAME).spec \
+			&& cp /src/packaging/rpm/$(NAME).spec /tmp/$(NAME).spec \
+			&& sed -i "s|@VERSION@|$(VERSION)|g; s|@OPENVPN_VER@|$(OPENVPN_VER)|g" /tmp/$(NAME).spec \
+			&& rpmbuild -ba /tmp/$(NAME).spec \
 				--define "_sourcedir /tmp" \
 				--define "_builddir /tmp/BUILD" \
 				--define "_rpmdir /dist" \

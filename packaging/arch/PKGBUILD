@@ -1,6 +1,6 @@
 # Maintainer: Nick Telford <nick.telford@gmail.com>
 pkgname=aws-vpn-systemd
-pkgver=2.1.1
+pkgver=@VERSION@
 pkgrel=1
 pkgdesc="SystemD services for managing AWS Client VPN without the GUI, including a patched OpenVPN."
 arch=('x86_64')
@@ -11,18 +11,18 @@ makedepends=('autoconf' 'automake' 'libtool' 'pkg-config')
 options=('!debug')
 sha256sums=('18db05f3d5eee3663db1914590044e5f96ff5cd47b6e7846c6a350806c23dbce'
             '4e426ab2e74391b1c85f81f80b15fc456e4190d9febcbf884a58fca19a135b87')
-source=('https://build.openvpn.net/downloads/releases/openvpn-2.7.4.tar.gz'
-        'openvpn-2.7.4-aws.patch')
+source=('https://build.openvpn.net/downloads/releases/openvpn-@OPENVPN_VER@.tar.gz'
+        'openvpn-@OPENVPN_VER@-aws.patch')
 validpgpkeys=()
 
 prepare() {
-  cd "$srcdir/openvpn-2.7.4"
-  patch -p1 < "$srcdir/openvpn-2.7.4-aws.patch"
+  cd "$srcdir/openvpn-@OPENVPN_VER@"
+  patch -p1 < "$srcdir/openvpn-@OPENVPN_VER@-aws.patch"
   autoreconf -fi
 }
 
 build() {
-  cd "$srcdir/openvpn-2.7.4"
+  cd "$srcdir/openvpn-@OPENVPN_VER@"
   ./configure \
     --disable-lzo \
     --disable-lz4 \
@@ -35,7 +35,7 @@ build() {
 
 package() {
   local _src="$startdir/../../src"
-  install -Dm755 "$srcdir/openvpn-2.7.4/src/openvpn/openvpn" "$pkgdir/usr/bin/acvc-openvpn"
+  install -Dm755 "$srcdir/openvpn-@OPENVPN_VER@/src/openvpn/openvpn" "$pkgdir/usr/bin/acvc-openvpn"
   install -Dm755 "$_src/aws-vpn" "$pkgdir/usr/bin/aws-vpn"
   install -Dm755 "$_src/dns-up" "$pkgdir/usr/lib/aws-vpn-systemd/dns-up"
   install -Dm755 "$_src/dns-down" "$pkgdir/usr/lib/aws-vpn-systemd/dns-down"

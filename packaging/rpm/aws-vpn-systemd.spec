@@ -1,8 +1,8 @@
-%global openvpn_version 2.7.4
+%global openvpn_version @OPENVPN_VER@
 %global debug_package %{nil}
 
 Name:           aws-vpn-systemd
-Version:        2.1.1
+Version:        @VERSION@
 Release:        1%{?dist}
 Summary:        systemd services for managing AWS Client VPN without the GUI
 License:        GPL-2.0-only

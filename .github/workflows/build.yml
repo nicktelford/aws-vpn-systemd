@@ -18,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - run: make deb
       - uses: actions/upload-artifact@v4
         with:
@@ -65,16 +67,17 @@ jobs:
           path: packages
           merge-multiple: true
 
-      - name: Create or update release
+      - name: Create release if version bumped
         run: |
           TAG="v${{ steps.version.outputs.value }}"
-          FILES=$(find packages -type f | sort)
           if gh release view "$TAG" &>/dev/null; then
-            gh release upload "$TAG" $FILES --clobber
-          else
-            gh release create "$TAG" $FILES \
-              --title "$TAG" \
-              --latest
+            echo "Release $TAG already exists; skipping publish."
+            exit 0
           fi
+          FILES=$(find packages -type f | sort)
+          gh release create "$TAG" $FILES \
+            --title "$TAG" \
+            --generate-notes \
+            --latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
