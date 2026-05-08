@@ -150,6 +150,7 @@ if [ -z "$VPN_PORT" ]; then
 fi
 
 VPN_SRV=""
+VPN_CONNECTED=0
 
 # connect to OpenVPN client management socket
 coproc setsid -w sg "$VPN_GROUP" "bash -c 'unix_connect \"\$1\"' -- '$VPN_MGMT_SOCKET'"
@@ -167,6 +168,7 @@ disconnect_vpn() {
 trap disconnect_vpn EXIT
 
 echo "state on" >&"$NC_IN"
+echo "state" >&"$NC_IN"
 
 while IFS=: read -u "$NC_OUT" -r signal data
 do
@@ -236,6 +238,9 @@ do
           systemd-notify "STATUS=Adding VPN routes to local system..."
           ;;
         CONNECTED)
+          VPN_CONNECTED=1
+          _connected_ip=$(printf '%s\n' "$data" | awk -F, '{ print $5 }')
+          [[ -n "$_connected_ip" ]] && VPN_SRV="$_connected_ip"
           echo "Connected to VPN at $VPN_HOSTNAME ($VPN_SRV)"
           systemd-notify --ready "STATUS=Connected to VPN at $VPN_HOSTNAME ($VPN_SRV)"
           ;;
@@ -260,7 +265,23 @@ do
       echo "FATAL ERROR: $data" >&2
       break;
       ;;
+    "SUCCESS"|"END")
+      ;;
     *)
+      # Synchronous reply line from the initial 'state' command (no '>' prefix,
+      # no ':' so IFS=: puts the whole CSV in $signal). Capture remote IP so
+      # VPN_SRV is populated even when the user unit restarts against an
+      # already-connected OpenVPN that will not replay >REMOTE. Also send
+      # READY=1 when already connected so systemd doesn't wait indefinitely for
+      # a >STATE:CONNECTED event that will never arrive.
+      if [[ "$signal" =~ ^[0-9] ]]; then
+        _ip=$(printf '%s\n' "$signal" | awk -F, '$2=="CONNECTED" && $5!="" { print $5 }')
+        if [[ -n "$_ip" ]]; then
+          VPN_SRV="$_ip"
+          VPN_CONNECTED=1
+          systemd-notify --ready "STATUS=Connected to VPN at $VPN_HOSTNAME ($VPN_SRV)"
+        fi
+      fi
       ;;
   esac
 done
