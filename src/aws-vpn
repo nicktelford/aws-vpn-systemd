@@ -125,8 +125,16 @@ auth() {
 }
 
 if [ ! -S "$VPN_MGMT_SOCKET" ]; then
-  echo -e "ERROR: No OpenVPN client service is running for $VPN_INSTANCE. Start one with:\n  $ systemctl start aws-vpn@$VPN_INSTANCE.service" >&2
-  exit 1
+  systemd-notify "STATUS=Waiting for OpenVPN management socket..."
+  _waited=0
+  until [ -S "$VPN_MGMT_SOCKET" ]; do
+    _waited=$((_waited + 1))
+    if [ "$_waited" -ge 30 ]; then
+      printf "ERROR: No OpenVPN client service is running for %s.\nStart one with:\n  $ systemctl start aws-vpn@%s.service\n" "$VPN_INSTANCE" "$VPN_INSTANCE" >&2
+      exit 1
+    fi
+    sleep 1
+  done
 fi
 
 VPN_GROUP=$(stat -c '%G' "$VPN_MGMT_SOCKET")
