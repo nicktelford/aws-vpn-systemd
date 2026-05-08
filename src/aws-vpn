@@ -163,7 +163,7 @@ cleanup() {
   # signal OpenVPN to do a full reset so the next user unit invocation
   # connects to clean state with no stale cached remote address.
   if [[ "$VPN_CONNECTED" != "1" ]]; then
-    echo 'signal SIGHUP' >&"$NC_IN" 2>/dev/null
+    echo 'signal SIGHUP' 1>&"$NC_IN" 2>/dev/null
   fi
   kill -- -"$MGMT_PID" 2>/dev/null
   wait "$MGMT_PID" 2>/dev/null
@@ -174,7 +174,7 @@ disconnect_vpn() {
   # logout, but never on crashes, OOM, or Restart=on-failure re-entry.
   # Tell OpenVPN to drop the tunnel and re-enter --management-hold so
   # the system unit stays running, ready for the next user unit.
-  echo 'signal SIGHUP' >&"$NC_IN" 2>/dev/null
+  echo 'signal SIGHUP' 1>&"$NC_IN" 2>/dev/null
   exit 0
 }
 
