@@ -27,7 +27,8 @@ ExecStart=/usr/bin/acvc-openvpn \
   --management-hold --management-query-remote --management-query-passwords \
   --script-security 2 \
   --up /usr/lib/aws-vpn-systemd/dns-up \
-  --down /usr/lib/aws-vpn-systemd/dns-down
+  --down /usr/lib/aws-vpn-systemd/dns-down \
+  --down-pre
 
 RestrictNamespaces=yes
 PrivateTmp=yes
