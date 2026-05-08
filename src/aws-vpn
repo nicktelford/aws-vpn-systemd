@@ -159,6 +159,12 @@ NC_IN=${COPROC[1]}
 MGMT_PID=${COPROC_PID}
 
 cleanup() {
+  # If the tunnel was never established (auth failure, pre-connect crash),
+  # signal OpenVPN to do a full reset so the next user unit invocation
+  # connects to clean state with no stale cached remote address.
+  if [[ "$VPN_CONNECTED" != "1" ]]; then
+    echo 'signal SIGHUP' >&"$NC_IN" 2>/dev/null
+  fi
   kill -- -"$MGMT_PID" 2>/dev/null
   wait "$MGMT_PID" 2>/dev/null
 }
