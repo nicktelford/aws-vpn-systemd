@@ -158,14 +158,22 @@ NC_OUT=${COPROC[0]}
 NC_IN=${COPROC[1]}
 MGMT_PID=${COPROC_PID}
 
-disconnect_vpn() {
-  echo 'Disconnecting VPN...'
-  echo 'signal SIGHUP' >&"$NC_IN"
-  sleep 1
+cleanup() {
   kill -- -"$MGMT_PID" 2>/dev/null
-  wait
+  wait "$MGMT_PID" 2>/dev/null
 }
-trap disconnect_vpn EXIT
+
+disconnect_vpn() {
+  # Intentional stop only: TERM is sent by systemd on stop / restart /
+  # logout, but never on crashes, OOM, or Restart=on-failure re-entry.
+  # Tell OpenVPN to drop the tunnel and re-enter --management-hold so
+  # the system unit stays running, ready for the next user unit.
+  echo 'signal SIGHUP' >&"$NC_IN" 2>/dev/null
+  exit 0
+}
+
+trap cleanup EXIT
+trap disconnect_vpn TERM
 
 echo "state on" >&"$NC_IN"
 echo "state" >&"$NC_IN"
@@ -251,9 +259,9 @@ do
         EXITING)
           echo "OpenVPN client shutting down..."
           systemd-notify "STOPPING=1" "STATUS=OpenVPN client shutting down..."
-          trap - EXIT
+          trap - EXIT TERM
           kill -- -"$MGMT_PID" 2>/dev/null
-          wait
+          wait "$MGMT_PID" 2>/dev/null
           exit 1
           ;;
       esac
@@ -287,5 +295,5 @@ do
 done
 
 systemd-notify "STOPPING=1"
-trap - EXIT
+trap - EXIT TERM
 kill -- -"$MGMT_PID" 2>/dev/null
