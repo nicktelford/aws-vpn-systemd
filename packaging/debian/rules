@@ -42,8 +42,6 @@ override_dh_auto_install:
 		$(CURDIR)/debian/aws-vpn-systemd/usr/lib/systemd/system/aws-vpn@.service
 	install -Dm644 $(CURDIR)/src/user_aws-vpn@.service \
 		$(CURDIR)/debian/aws-vpn-systemd/usr/lib/systemd/user/aws-vpn@.service
-	install -Dm755 $(CURDIR)/src/aws-vpn-sleep \
-		$(CURDIR)/debian/aws-vpn-systemd/usr/lib/systemd/system-sleep/aws-vpn
 	install -Dm644 $(CURDIR)/src/connected.html \
 		$(CURDIR)/debian/aws-vpn-systemd/usr/share/aws-vpn-systemd/connected.html
 	install -dm755 $(CURDIR)/debian/aws-vpn-systemd/etc/openvpn/client

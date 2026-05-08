@@ -65,8 +65,6 @@ install -Dm644 src/system_aws-vpn@.service \
     %{buildroot}/usr/lib/systemd/system/aws-vpn@.service
 install -Dm644 src/user_aws-vpn@.service \
     %{buildroot}/usr/lib/systemd/user/aws-vpn@.service
-install -Dm755 src/aws-vpn-sleep \
-    %{buildroot}/usr/lib/systemd/system-sleep/aws-vpn
 install -Dm644 src/connected.html \
     %{buildroot}/usr/share/%{name}/connected.html
 install -Dm644 %{SOURCE2} \
@@ -84,7 +82,6 @@ install -dm755 %{buildroot}/etc/openvpn/client
 /usr/share/polkit-1/rules.d/00-openvpn-resolved.rules
 /usr/lib/systemd/system/aws-vpn@.service
 /usr/lib/systemd/user/aws-vpn@.service
-/usr/lib/systemd/system-sleep/aws-vpn
 %dir /etc/openvpn/client
 %dir /usr/share/%{name}
 /usr/share/%{name}/connected.html

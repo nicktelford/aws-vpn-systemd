@@ -141,8 +141,7 @@ if [ -z "$VPN_PORT" ]; then
   exit 1
 fi
 
-# fetch/cache one ip address of the vpn endpoint. The same ip needs to be used for both the below vpn connections
-VPN_SRV=$(resolve_host "$VPN_HOSTNAME")
+VPN_SRV=""
 
 # connect to OpenVPN client management socket
 coproc setsid -w sg "$VPN_GROUP" "bash -c 'unix_connect \"\$1\"' -- '$VPN_MGMT_SOCKET'"
@@ -169,6 +168,14 @@ do
       ;;
     ">REMOTE")
       if [[ "$data" == "$VPN_HOSTNAME,$VPN_PORT,udp"* ]]; then
+        if [[ -z "$VPN_SRV" ]]; then
+          VPN_SRV=$(resolve_host "$VPN_HOSTNAME")
+        fi
+        if [[ -z "$VPN_SRV" ]]; then
+          echo "WARN: Failed to resolve $VPN_HOSTNAME, skipping." >&2
+          echo "remote SKIP" >&"$NC_IN"
+          continue
+        fi
         echo "remote MOD $VPN_SRV $VPN_PORT" >&"$NC_IN"
       else
         echo "WARN: Skipping attempt to connect to unrecognised endpoint: $data" >&2
@@ -177,6 +184,12 @@ do
       ;;
     ">PASSWORD")
       if [[ "$data" == "Need 'Auth' username/password"* ]]; then
+        # >PASSWORD can arrive before >REMOTE when OpenVPN pre-fetches
+        # credentials. Resolve now so the probe and remote MOD target the
+        # same AZ (>REMOTE will reuse VPN_SRV if already set).
+        if [[ -z "$VPN_SRV" ]]; then
+          VPN_SRV=$(resolve_host "$VPN_HOSTNAME")
+        fi
         echo "Opening browser and waiting for the SAML response..."
         if pass=$(auth "$VPN_SRV" "$VPN_PORT" "$VPN_CONF" "$SAML_RESPONSE_TIMEOUT"); then
           echo "username \"Auth\" \"N/A\"" >&"$NC_IN"
