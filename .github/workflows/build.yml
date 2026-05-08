@@ -56,6 +56,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - id: version
         run: |
@@ -74,10 +76,18 @@ jobs:
             echo "Release $TAG already exists; skipping publish."
             exit 0
           fi
+          PREV=$(git describe --tags --abbrev=0 --match 'v*' --exclude "$TAG" 2>/dev/null || true)
+          if [ -n "$PREV" ]; then
+            printf '## Changes since %s\n\n' "$PREV" > notes.md
+            git log --no-merges --pretty='format:- %s' "$PREV..HEAD" -- >> notes.md
+          else
+            printf '## Initial release\n\n' > notes.md
+            git log --no-merges --pretty='format:- %s' HEAD -- >> notes.md
+          fi
           FILES=$(find packages -type f | sort)
           gh release create "$TAG" $FILES \
             --title "$TAG" \
-            --generate-notes \
+            --notes-file notes.md \
             --latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
