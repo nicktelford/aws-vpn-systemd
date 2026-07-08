@@ -8,6 +8,13 @@ Documentation=https://github.com/nicktelford/aws-vpn-systemd
 Type=notify
 NotifyAccess=all
 
+# Only signal the main aws-vpn script on stop, so its TERM trap can deliver
+# 'signal SIGHUP' to OpenVPN over the management socket before the socat
+# coproc is reaped (its EXIT trap cleans up the coproc afterwards). The
+# default control-group mode SIGTERMs the coproc concurrently, racing the
+# SIGHUP and leaving OpenVPN connected with stale routes.
+KillMode=process
+
 Restart=on-failure
 RestartSec=2s
 RestartMaxDelaySec=60s
