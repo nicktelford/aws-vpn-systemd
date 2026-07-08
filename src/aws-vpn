@@ -175,6 +175,13 @@ disconnect_vpn() {
   # Tell OpenVPN to drop the tunnel and re-enter --management-hold so
   # the system unit stays running, ready for the next user unit.
   echo 'signal SIGHUP' 1>&"$NC_IN" 2>/dev/null
+  # Block until OpenVPN acknowledges the command (bounded by a short
+  # timeout) before returning. Otherwise the EXIT trap reaps the socat
+  # coproc before it forwards the buffered command and the SIGHUP is
+  # lost, leaving OpenVPN connected with stale routes.
+  while IFS= read -u "$NC_OUT" -r -t 5 reply; do
+    [[ "$reply" == "SUCCESS:"* ]] && break
+  done
   exit 0
 }
 
