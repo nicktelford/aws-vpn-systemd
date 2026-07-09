@@ -28,7 +28,9 @@ ExecStart=/usr/bin/acvc-openvpn \
   --script-security 2 \
   --up /usr/lib/aws-vpn-systemd/dns-up \
   --down /usr/lib/aws-vpn-systemd/dns-down \
-  --down-pre
+  --down-pre \
+  --tun-mtu 1400 \
+  --mssfix 1360
 
 RestrictNamespaces=yes
 PrivateTmp=yes
