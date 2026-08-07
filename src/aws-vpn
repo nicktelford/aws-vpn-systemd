@@ -153,7 +153,7 @@ VPN_SRV=""
 VPN_CONNECTED=0
 
 # connect to OpenVPN client management socket
-coproc setsid -w sg "$VPN_GROUP" "bash -c 'unix_connect \"\$1\"' -- '$VPN_MGMT_SOCKET'"
+coproc setsid -w newgrp "$VPN_GROUP" "bash -c 'unix_connect \"\$1\"' -- '$VPN_MGMT_SOCKET'"
 NC_OUT=${COPROC[0]}
 NC_IN=${COPROC[1]}
 MGMT_PID=${COPROC_PID}
