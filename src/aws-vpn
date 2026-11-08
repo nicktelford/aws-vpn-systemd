@@ -153,7 +153,15 @@ VPN_SRV=""
 VPN_CONNECTED=0
 
 # connect to OpenVPN client management socket
-coproc setsid -w sg "$VPN_GROUP" "bash -c 'unix_connect \"\$1\"' -- '$VPN_MGMT_SOCKET'"
+# OpenVPN's --management-client-group checks the peer's primary GID, so run
+# the client with VPN_GROUP as its primary group. shadow's sg is absent on
+# some systems; util-linux newgrp accepts a command there.
+if command -v sg >/dev/null 2>&1; then
+  RUN_AS_GROUP=(sg "$VPN_GROUP")
+else
+  RUN_AS_GROUP=(newgrp "$VPN_GROUP" -c)
+fi
+coproc setsid -w "${RUN_AS_GROUP[@]}" "bash -c 'unix_connect \"\$1\"' -- '$VPN_MGMT_SOCKET'"
 NC_OUT=${COPROC[0]}
 NC_IN=${COPROC[1]}
 MGMT_PID=${COPROC_PID}
